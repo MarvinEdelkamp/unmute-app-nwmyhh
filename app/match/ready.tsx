@@ -9,17 +9,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
 const PRESET_MESSAGES = [
-  "I'm at the bar in a blue hoodie",
-  "Table by the window",
-  "Meet at the entrance",
-  "I'm wearing glasses",
+  "I'm near the bar in a blue hoodie",
+  "I'm at the table by the window",
+  "Let's meet at the entrance in 2 min",
+  "I'm standing near the coffee machine",
 ];
 
 export default function ReadyMatchScreen() {
   const { matches, closeMatch } = useSession();
   const { user } = useAuth();
   const [message, setMessage] = useState('');
-  const [sentMessage, setSentMessage] = useState<string | null>(null);
+  const [sentMessages, setSentMessages] = useState<string[]>([]);
 
   const readyMatch = matches.find(m => m.status === 'both_ready');
 
@@ -34,14 +34,12 @@ export default function ReadyMatchScreen() {
     if (!message.trim()) {
       return;
     }
-    setSentMessage(message);
+    setSentMessages([...sentMessages, message]);
     setMessage('');
-    Alert.alert('Message sent', 'Your coordination message has been sent');
   };
 
   const handlePresetMessage = (preset: string) => {
-    setSentMessage(preset);
-    Alert.alert('Message sent', 'Your coordination message has been sent');
+    setSentMessages([...sentMessages, preset]);
   };
 
   const handleSayHi = () => {
@@ -78,31 +76,49 @@ export default function ReadyMatchScreen() {
     );
   };
 
+  const handleClose = () => {
+    router.back();
+  };
+
   return (
     <View style={[commonStyles.container, styles.container]}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Match</Text>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <IconSymbol 
+            ios_icon_name="xmark" 
+            android_material_icon_name="close" 
+            size={24} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {otherUser.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+        <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {otherUser.name.charAt(0).toUpperCase()}
+            </Text>
           </View>
-
-          <Text style={[commonStyles.title, styles.title]}>
-            It&apos;s a match! 🎉
-          </Text>
-
           <Text style={styles.name}>{otherUser.name}</Text>
+          <View style={styles.locationRow}>
+            <IconSymbol 
+              ios_icon_name="location.fill" 
+              android_material_icon_name="location_on" 
+              size={16} 
+              color={colors.textSecondary} 
+            />
+            <Text style={styles.location}>English Garden</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Shared interests</Text>
-          <View style={styles.interestsGrid}>
+          <Text style={styles.sectionLabel}>You both love:</Text>
+          <View style={styles.interestsRow}>
             {readyMatch.sharedInterests.map((interest, index) => (
               <View key={index} style={styles.interestChip}>
                 <Text style={styles.interestText}>{interest}</Text>
@@ -111,77 +127,74 @@ export default function ReadyMatchScreen() {
           </View>
         </View>
 
-        <View style={styles.encouragement}>
-          <IconSymbol 
-            ios_icon_name="hand.wave.fill" 
-            android_material_icon_name="waving_hand" 
-            size={24} 
-            color={colors.accent} 
-          />
-          <Text style={styles.encouragementText}>
-            Time to say hi in person! Use the quick messages below to help find each other.
+        <View style={styles.sayHiSection}>
+          <View style={styles.sayHiHeader}>
+            <IconSymbol 
+              ios_icon_name="hand.wave.fill" 
+              android_material_icon_name="waving_hand" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.sayHiTitle}>Say hi for real</Text>
+          </View>
+          <Text style={styles.sayHiDescription}>
+            If you feel comfortable, go and say hi in person. A simple opener works.
           </Text>
+          <View style={styles.conversationStarter}>
+            <Text style={styles.conversationStarterText}>
+              &quot;Hi! Are you on Unmute? Looks like we both love Hiking.&quot;
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick coordination</Text>
+          <Text style={styles.sectionTitle}>Help them find you (optional)</Text>
           
-          {sentMessage && (
-            <View style={styles.sentMessage}>
-              <IconSymbol 
-                ios_icon_name="checkmark.circle.fill" 
-                android_material_icon_name="check_circle" 
-                size={20} 
-                color={colors.success} 
-              />
-              <Text style={styles.sentMessageText}>{sentMessage}</Text>
-            </View>
-          )}
-
-          <View style={styles.presetButtons}>
-            {PRESET_MESSAGES.map((preset, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.presetButton}
-                onPress={() => handlePresetMessage(preset)}
-              >
-                <Text style={styles.presetButtonText}>{preset}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {PRESET_MESSAGES.map((preset, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.presetButton}
+              onPress={() => handlePresetMessage(preset)}
+            >
+              <Text style={styles.presetButtonText}>{preset}</Text>
+            </TouchableOpacity>
+          ))}
 
           <View style={styles.customMessageContainer}>
             <TextInput
-              style={[commonStyles.input, styles.messageInput]}
-              placeholder="Or type your own message..."
+              style={styles.messageInput}
+              placeholder="Or type your own..."
               placeholderTextColor={colors.textSecondary}
               value={message}
               onChangeText={setMessage}
               maxLength={100}
             />
-            <TouchableOpacity
-              style={[buttonStyles.primary, styles.sendButton]}
-              onPress={handleSendMessage}
-            >
-              <IconSymbol 
-                ios_icon_name="paperplane.fill" 
-                android_material_icon_name="send" 
-                size={20} 
-                color={colors.card} 
-              />
-            </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.reportButton}>
+        <View style={styles.infoBox}>
           <IconSymbol 
-            ios_icon_name="exclamationmark.shield.fill" 
-            android_material_icon_name="report" 
-            size={16} 
-            color={colors.error} 
+            ios_icon_name="info.circle.fill" 
+            android_material_icon_name="info" 
+            size={18} 
+            color={colors.primary} 
           />
-          <Text style={styles.reportButtonText}>Block / Report</Text>
-        </TouchableOpacity>
+          <Text style={styles.infoText}>
+            No in-app chat. Unmute creates the opportunity—the real conversation happens face to face.
+          </Text>
+        </View>
+
+        <View style={styles.warningBox}>
+          <IconSymbol 
+            ios_icon_name="clock.fill" 
+            android_material_icon_name="schedule" 
+            size={18} 
+            color={colors.accent} 
+          />
+          <Text style={styles.warningText}>
+            This match expires in a few minutes. If no one says hi, it disappears—no pressure, no awkwardness.
+          </Text>
+        </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
@@ -189,7 +202,7 @@ export default function ReadyMatchScreen() {
           style={[buttonStyles.primary, styles.button]}
           onPress={handleSayHi}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>
+          <Text style={[buttonStyles.text]}>
             I&apos;ll say hi
           </Text>
         </TouchableOpacity>
@@ -200,6 +213,16 @@ export default function ReadyMatchScreen() {
         >
           <Text style={buttonStyles.textSecondary}>I changed my mind</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.reportButton} onPress={() => Alert.alert('Report', 'Report functionality')}>
+          <IconSymbol 
+            ios_icon_name="flag.fill" 
+            android_material_icon_name="flag" 
+            size={16} 
+            color={colors.textSecondary} 
+          />
+          <Text style={styles.reportButtonText}>Block or report</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -209,16 +232,30 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 60,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  closeButton: {
+    padding: 8,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+  },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 200,
+    paddingBottom: 250,
   },
-  header: {
+  profileSection: {
     alignItems: 'center',
-    marginBottom: 32,
-  },
-  avatarContainer: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   avatar: {
     width: 80,
@@ -227,23 +264,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
   },
   avatarText: {
     fontSize: 32,
     fontWeight: '700',
     color: colors.card,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
   name: {
     fontSize: 24,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  location: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   section: {
     marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 16,
@@ -251,92 +301,111 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 12,
   },
-  interestsGrid: {
+  interestsRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
     flexWrap: 'wrap',
     gap: 8,
   },
   interestChip: {
     backgroundColor: colors.highlight,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
   },
   interestText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.primary,
     fontWeight: '500',
   },
-  encouragement: {
-    flexDirection: 'row',
-    gap: 12,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
+  sayHiSection: {
+    backgroundColor: colors.primary,
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 24,
   },
-  encouragementText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  sentMessage: {
+  sayHiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.secondary,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  sentMessageText: {
-    flex: 1,
+  sayHiTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.card,
+  },
+  sayHiDescription: {
     fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  presetButtons: {
-    gap: 8,
+    color: colors.card,
+    lineHeight: 20,
     marginBottom: 12,
+  },
+  conversationStarter: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 12,
+    borderRadius: 10,
+  },
+  conversationStarterText: {
+    fontSize: 14,
+    color: colors.card,
+    fontStyle: 'italic',
+    lineHeight: 20,
   },
   presetButton: {
     backgroundColor: colors.card,
     padding: 14,
     borderRadius: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: colors.border,
   },
   presetButtonText: {
     fontSize: 14,
     color: colors.text,
-    textAlign: 'center',
   },
   customMessageContainer: {
-    flexDirection: 'row',
-    gap: 8,
+    marginTop: 4,
   },
   messageInput: {
-    flex: 1,
-  },
-  sendButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    padding: 12,
-  },
-  reportButtonText: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     fontSize: 14,
-    color: colors.error,
-    fontWeight: '500',
+    color: colors.text,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: colors.highlight,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: '#FFF9E6',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
   },
   buttonContainer: {
     position: 'absolute',
@@ -346,8 +415,21 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.background,
     gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+  },
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: 8,
+  },
+  reportButtonText: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
 });

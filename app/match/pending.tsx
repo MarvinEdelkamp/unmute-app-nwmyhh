@@ -21,8 +21,6 @@ export default function PendingMatchScreen() {
     return null;
   }
 
-  const otherUser = pendingMatch.userA.id === user?.id ? pendingMatch.userB : pendingMatch.userA;
-
   const handleInterested = async () => {
     await respondToMatch(pendingMatch.id, true);
     router.back();
@@ -33,54 +31,89 @@ export default function PendingMatchScreen() {
     router.back();
   };
 
+  const handleClose = () => {
+    router.back();
+  };
+
   return (
     <View style={[commonStyles.container, styles.container]}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Confirm</Text>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <IconSymbol 
+            ios_icon_name="xmark" 
+            android_material_icon_name="close" 
+            size={24} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
+        <Text style={styles.title}>
+          Share your profile with this match?
+        </Text>
+
+        <Text style={styles.subtitle}>
+          Once you both confirm, you can coordinate and meet
+        </Text>
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>They&apos;ll see:</Text>
+          
+          <View style={styles.infoItem}>
             <IconSymbol 
-              ios_icon_name="sparkles" 
-              android_material_icon_name="auto_awesome" 
-              size={48} 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle" 
+              size={20} 
               color={colors.primary} 
             />
+            <Text style={styles.infoText}>Your first name</Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.infoText}>Your profile photo (if set)</Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.infoText}>Your shared interests</Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.infoText}>Approximate location</Text>
           </View>
         </View>
 
-        <Text style={[commonStyles.title, styles.title]}>
-          Someone here shares your interests!
-        </Text>
-
-        <Text style={[commonStyles.textSecondary, styles.subtitle]}>
-          You both have these interests in common:
-        </Text>
-
-        <View style={styles.interestsContainer}>
-          {pendingMatch.sharedInterests.map((interest, index) => (
-            <View key={index} style={styles.interestChip}>
-              <IconSymbol 
-                ios_icon_name="heart.fill" 
-                android_material_icon_name="favorite" 
-                size={16} 
-                color={colors.primary} 
-              />
-              <Text style={styles.interestText}>{interest}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.infoBox}>
+        <View style={styles.privacyBox}>
           <IconSymbol 
-            ios_icon_name="info.circle.fill" 
-            android_material_icon_name="info" 
-            size={20} 
+            ios_icon_name="lock.fill" 
+            android_material_icon_name="lock" 
+            size={18} 
             color={colors.primary} 
           />
-          <Text style={styles.infoText}>
-            If you&apos;re both interested, we&apos;ll share your names and help you coordinate meeting up.
+          <Text style={styles.privacyText}>
+            Your privacy: We never share your exact location. Only both of you can see this match.
           </Text>
         </View>
       </ScrollView>
@@ -90,8 +123,8 @@ export default function PendingMatchScreen() {
           style={[buttonStyles.primary, styles.button]}
           onPress={handleInterested}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>
-            I&apos;m interested
+          <Text style={[buttonStyles.text]}>
+            Yes, share my profile
           </Text>
         </TouchableOpacity>
 
@@ -99,7 +132,7 @@ export default function PendingMatchScreen() {
           style={[buttonStyles.secondary, styles.button]}
           onPress={handleNotNow}
         >
-          <Text style={buttonStyles.textSecondary}>Not now</Text>
+          <Text style={buttonStyles.textSecondary}>Not interested</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -110,55 +143,72 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 60,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  closeButton: {
+    padding: 8,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingBottom: 200,
   },
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.highlight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: {
-    textAlign: 'center',
-    marginBottom: 16,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+    lineHeight: 32,
   },
   subtitle: {
-    textAlign: 'center',
-    marginBottom: 24,
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 32,
+    lineHeight: 22,
   },
-  interestsContainer: {
-    gap: 12,
-    marginBottom: 24,
+  infoSection: {
+    backgroundColor: colors.secondary,
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
   },
-  interestChip: {
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
+    marginBottom: 12,
   },
-  interestText: {
-    fontSize: 16,
+  infoText: {
+    fontSize: 15,
     color: colors.text,
-    fontWeight: '500',
   },
-  infoBox: {
+  privacyBox: {
     flexDirection: 'row',
     gap: 12,
     backgroundColor: colors.highlight,
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
   },
-  infoText: {
+  privacyText: {
     flex: 1,
     fontSize: 14,
     color: colors.text,
@@ -172,6 +222,8 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.background,
     gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',

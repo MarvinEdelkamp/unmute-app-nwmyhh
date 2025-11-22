@@ -2,18 +2,20 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#F5F5F5',
-  text: '#212121',
-  textSecondary: '#757575',
-  primary: '#64B5F6',
-  secondary: '#A5D6A7',
-  accent: '#FFCA28',
+  background: '#F8F9FA',
+  text: '#2C3E50',
+  textSecondary: '#7F8C8D',
+  primary: '#4ECDC4',
+  primaryLight: '#A8E6CF',
+  secondary: '#E8F5F4',
+  accent: '#FFD93D',
   card: '#FFFFFF',
-  highlight: '#BBDEFB',
-  error: '#EF5350',
-  success: '#66BB6A',
+  highlight: '#E8F5F4',
+  error: '#E74C3C',
+  success: '#2ECC71',
   border: '#E0E0E0',
-  disabled: '#BDBDBD',
+  disabled: '#ECF0F1',
+  shadow: 'rgba(0, 0, 0, 0.08)',
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -38,12 +40,24 @@ export const buttonStyles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.card,
   },
   textSecondary: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.text,
+  },
+  link: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text,
+    textDecorationLine: 'underline',
+  },
+  linkPrimary: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
 });
 
@@ -83,7 +97,7 @@ export const commonStyles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 2,
   },
   input: {

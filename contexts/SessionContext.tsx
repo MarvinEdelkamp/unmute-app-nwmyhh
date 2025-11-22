@@ -12,6 +12,7 @@ interface SessionContextType {
   remainingTime: number;
   openSession: () => Promise<void>;
   closeSession: () => Promise<void>;
+  extendSession: () => Promise<void>;
   respondToMatch: (matchId: string, interested: boolean) => Promise<void>;
   closeMatch: (matchId: string) => Promise<void>;
 }
@@ -108,8 +109,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       locationSubscription.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 30000, // Update every 30 seconds
-          distanceInterval: 10, // Or when moved 10 meters
+          timeInterval: 30000,
+          distanceInterval: 10,
         },
         (location) => {
           updateLocation(location.coords.latitude, location.coords.longitude);
@@ -138,7 +139,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const startMatchChecking = () => {
     matchCheckInterval.current = setInterval(() => {
       checkForMatches();
-    }, 45000); // Check every 45 seconds
+    }, 45000);
   };
 
   const stopMatchChecking = () => {
@@ -149,8 +150,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   const checkForMatches = async () => {
-    // Mock match checking - in production, this would query Supabase
-    // For demo purposes, we'll create a mock match occasionally
     if (Math.random() > 0.9 && user) {
       const mockMatch: Match = {
         id: Date.now().toString(),
@@ -160,7 +159,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         userB: {
           id: 'mock-user',
           email: 'mock@example.com',
-          name: 'Alex',
+          name: 'Sophie',
           interests: user.interests.slice(0, 2),
           createdAt: new Date().toISOString(),
         },
@@ -218,6 +217,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const extendSession = async () => {
+    try {
+      if (session) {
+        const currentExpiresAt = new Date(session.expiresAt);
+        const newExpiresAt = new Date(currentExpiresAt.getTime() + 30 * 60000);
+        
+        const extendedSession = { ...session, expiresAt: newExpiresAt.toISOString() };
+        await AsyncStorage.setItem('session', JSON.stringify(extendedSession));
+        setSession(extendedSession);
+      }
+    } catch (error) {
+      console.log('Error extending session:', error);
+      throw error;
+    }
+  };
+
   const respondToMatch = async (matchId: string, interested: boolean) => {
     try {
       const matchIndex = matches.findIndex(m => m.id === matchId);
@@ -270,6 +285,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         remainingTime,
         openSession,
         closeSession,
+        extendSession,
         respondToMatch,
         closeMatch,
       }}
