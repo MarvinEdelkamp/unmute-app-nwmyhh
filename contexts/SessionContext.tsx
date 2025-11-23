@@ -29,6 +29,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const matchCheckInterval = useRef<NodeJS.Timeout | null>(null);
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
+  const isCleaningUp = useRef(false);
 
   const isOpen = session?.status === 'open';
 
@@ -42,7 +43,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isOpen && session) {
+    if (isOpen && session && !isCleaningUp.current) {
       startLocationTracking();
       startMatchChecking();
       startTimer();
@@ -53,14 +54,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
-      cleanup();
+      if (!isCleaningUp.current) {
+        cleanup();
+      }
     };
   }, [isOpen, session]);
 
   const cleanup = () => {
+    isCleaningUp.current = true;
     stopLocationTracking();
     stopMatchChecking();
     stopTimer();
+    setTimeout(() => {
+      isCleaningUp.current = false;
+    }, 100);
   };
 
   const loadSession = async () => {
@@ -98,10 +105,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startTimer = () => {
-    stopTimer();
+    if (timerInterval.current) {
+      return; // Already running
+    }
     
     timerInterval.current = setInterval(() => {
-      if (session) {
+      if (session && !isCleaningUp.current) {
         const now = new Date();
         const expiresAt = new Date(session.expiresAt);
         const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
@@ -125,6 +134,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const startLocationTracking = async () => {
     try {
+      if (locationSubscription.current) {
+        return; // Already tracking
+      }
+
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.warn('Location permission denied');
@@ -142,7 +155,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           distanceInterval: 10,
         },
         (location) => {
-          updateLocation(location.coords.latitude, location.coords.longitude);
+          if (!isCleaningUp.current) {
+            updateLocation(location.coords.latitude, location.coords.longitude);
+          }
         }
       );
 
@@ -163,7 +178,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const updateLocation = async (latitude: number, longitude: number) => {
     try {
-      if (session) {
+      if (session && !isCleaningUp.current) {
         const updatedSession = { ...session, latitude, longitude };
         setSession(updatedSession);
         await storage.setItem('session', updatedSession);
@@ -175,10 +190,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startMatchChecking = () => {
-    stopMatchChecking();
+    if (matchCheckInterval.current) {
+      return; // Already checking
+    }
     
     matchCheckInterval.current = setInterval(() => {
-      checkForMatches();
+      if (!isCleaningUp.current) {
+        checkForMatches();
+      }
     }, 45000);
 
     console.log('Match checking started');
@@ -194,7 +213,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const checkForMatches = async () => {
     try {
-      if (Math.random() > 0.9 && user) {
+      if (Math.random() > 0.9 && user && !isCleaningUp.current) {
         const mockMatch: Match = {
           id: Date.now().toString(),
           sessionAId: session?.id || '',
@@ -260,14 +279,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const closeSession = async () => {
     try {
       if (session) {
+        isCleaningUp.current = true;
         await storage.removeItem('session');
         setSession(null);
         setRemainingTime(0);
         console.log('Session closed successfully');
+        setTimeout(() => {
+          isCleaningUp.current = false;
+        }, 100);
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CLOSE');
       console.error('Error closing session:', error);
+      isCleaningUp.current = false;
     }
   };
 
@@ -400,7 +424,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 export function useSession() {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    throw new Error('useSession must be used within a SessionProvider');
+    // Return safe defaults instead of throwing
+    console.warn('useSession must be used within a SessionProvider, using defaults');
+    return {
+      session: null,
+      matches: [],
+      isOpen: false,
+      remainingTime: 0,
+      openSession: async () => {},
+      closeSession: async () => {},
+      extendSession: async () => {},
+      respondToMatch: async () => {},
+      confirmMatch: async () => {},
+      closeMatch: async () => {},
+    };
   }
   return context;
 }

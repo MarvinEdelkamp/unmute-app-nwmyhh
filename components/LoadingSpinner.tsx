@@ -37,10 +37,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.xxxl,
   },
   message: {
-    ...typography.caption,
-    marginTop: spacing.md,
+    ...typography.body,
+    marginTop: spacing.lg,
     textAlign: 'center',
   },
 });

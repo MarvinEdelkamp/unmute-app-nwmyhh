@@ -11,6 +11,7 @@ interface ThemeContextType {
   themeMode: ThemeMode;
   isDark: boolean;
   setThemeMode: (mode: ThemeMode) => void;
+  loading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -18,6 +19,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadThemePreference();
@@ -26,11 +28,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const loadThemePreference = async () => {
     try {
       const savedTheme = await AsyncStorage.getItem('themeMode');
-      if (savedTheme) {
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto')) {
         setThemeModeState(savedTheme as ThemeMode);
       }
     } catch (error) {
       console.log('Error loading theme preference:', error);
+      // Use default 'auto' mode on error
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,6 +45,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setThemeModeState(mode);
     } catch (error) {
       console.log('Error saving theme preference:', error);
+      // Still update state even if save fails
+      setThemeModeState(mode);
     }
   };
 
@@ -49,8 +56,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const theme = isDark ? darkColors : lightColors;
 
+  // Provide default theme immediately to prevent undefined errors
+  if (loading) {
+    return (
+      <ThemeContext.Provider value={{ 
+        theme: lightColors, 
+        themeMode: 'auto', 
+        isDark: false, 
+        setThemeMode: () => {},
+        loading: true 
+      }}>
+        {children}
+      </ThemeContext.Provider>
+    );
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme, themeMode, isDark, setThemeMode }}>
+    <ThemeContext.Provider value={{ theme, themeMode, isDark, setThemeMode, loading }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -59,7 +81,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    // Return safe default instead of throwing
+    console.warn('useTheme must be used within a ThemeProvider, using default theme');
+    return {
+      theme: lightColors,
+      themeMode: 'auto' as ThemeMode,
+      isDark: false,
+      setThemeMode: () => {},
+      loading: false,
+    };
   }
   return context;
 }

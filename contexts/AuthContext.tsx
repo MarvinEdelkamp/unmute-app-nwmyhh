@@ -31,21 +31,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      const [userData, onboardedData] = await Promise.all([
-        storage.getItem<User>('user'),
-        storage.getItem<boolean>('onboarded'),
+      // Load user and onboarding status in parallel with timeout
+      const loadPromises = Promise.race([
+        Promise.all([
+          storage.getItem<User>('user'),
+          storage.getItem<boolean>('onboarded'),
+        ]),
+        // Timeout after 5 seconds
+        new Promise<[null, null]>((resolve) => 
+          setTimeout(() => {
+            console.warn('Storage load timeout, using defaults');
+            resolve([null, null]);
+          }, 5000)
+        ),
       ]);
+
+      const [userData, onboardedData] = await loadPromises;
       
       if (userData) {
         setUser(userData);
+        console.log('User loaded successfully:', userData.id);
       }
       
       if (onboardedData) {
         setHasCompletedOnboarding(onboardedData);
+        console.log('Onboarding status loaded:', onboardedData);
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_LOAD_USER');
       console.error('Error loading user:', error);
+      // Don't throw - allow app to continue with no user
     } finally {
       setLoading(false);
     }
@@ -216,7 +231,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Return safe defaults instead of throwing
+    console.warn('useAuth must be used within an AuthProvider, using defaults');
+    return {
+      user: null,
+      loading: false,
+      hasCompletedOnboarding: false,
+      signUp: async () => {},
+      signIn: async () => {},
+      signOut: async () => {},
+      updateUser: async () => {},
+      completeOnboarding: async () => {},
+    };
   }
   return context;
 }
