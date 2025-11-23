@@ -17,6 +17,7 @@ interface SessionContextType {
   respondToMatch: (matchId: string, interested: boolean) => Promise<void>;
   confirmMatch: (matchId: string) => Promise<void>;
   closeMatch: (matchId: string) => Promise<void>;
+  refreshMatches: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -104,9 +105,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshMatches = async () => {
+    console.log('Refreshing matches from storage');
+    await loadMatches();
+  };
+
   const startTimer = () => {
     if (timerInterval.current) {
-      return; // Already running
+      return;
     }
     
     timerInterval.current = setInterval(() => {
@@ -135,7 +141,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const startLocationTracking = async () => {
     try {
       if (locationSubscription.current) {
-        return; // Already tracking
+        return;
       }
 
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -191,7 +197,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const startMatchChecking = () => {
     if (matchCheckInterval.current) {
-      return; // Already checking
+      return;
     }
     
     matchCheckInterval.current = setInterval(() => {
@@ -320,12 +326,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const respondToMatch = async (matchId: string, interested: boolean) => {
     try {
-      const matchIndex = matches.findIndex(m => m.id === matchId);
+      console.log('Responding to match:', matchId, 'interested:', interested);
+      
+      const currentMatches = await storage.getItem<Match[]>('matches') || [];
+      const matchIndex = currentMatches.findIndex(m => m.id === matchId);
+      
       if (matchIndex === -1) {
         throw new Error('Match not found');
       }
 
-      const match = matches[matchIndex];
+      const match = currentMatches[matchIndex];
       let newStatus = match.status;
 
       if (!interested) {
@@ -338,18 +348,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      console.log('Updating match status from', match.status, 'to', newStatus);
+
       const updatedMatch = { ...match, status: newStatus };
-      const updatedMatches = [...matches];
+      const updatedMatches = [...currentMatches];
       updatedMatches[matchIndex] = updatedMatch;
 
-      setMatches(updatedMatches);
       const success = await storage.setItem('matches', updatedMatches);
       
       if (!success) {
         throw new Error('Failed to save match response');
       }
 
-      console.log('Match response saved:', matchId, newStatus);
+      setMatches(updatedMatches);
+      console.log('Match response saved successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_RESPOND_MATCH');
       errorHandler.showError('Failed to respond to match. Please try again.');
@@ -359,24 +371,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const confirmMatch = async (matchId: string) => {
     try {
-      const matchIndex = matches.findIndex(m => m.id === matchId);
+      console.log('Confirming match:', matchId);
+      
+      const currentMatches = await storage.getItem<Match[]>('matches') || [];
+      const matchIndex = currentMatches.findIndex(m => m.id === matchId);
+      
       if (matchIndex === -1) {
         throw new Error('Match not found');
       }
 
-      const match = matches[matchIndex];
+      const match = currentMatches[matchIndex];
       const updatedMatch = { ...match, status: 'both_ready' as const };
-      const updatedMatches = [...matches];
+      const updatedMatches = [...currentMatches];
       updatedMatches[matchIndex] = updatedMatch;
 
-      setMatches(updatedMatches);
       const success = await storage.setItem('matches', updatedMatches);
       
       if (!success) {
         throw new Error('Failed to confirm match');
       }
 
-      console.log('Match confirmed:', matchId);
+      setMatches(updatedMatches);
+      console.log('Match confirmed successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CONFIRM_MATCH');
       errorHandler.showError('Failed to confirm match. Please try again.');
@@ -386,15 +402,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const closeMatch = async (matchId: string) => {
     try {
-      const updatedMatches = matches.filter(m => m.id !== matchId);
-      setMatches(updatedMatches);
+      console.log('Closing match:', matchId);
+      
+      const currentMatches = await storage.getItem<Match[]>('matches') || [];
+      const updatedMatches = currentMatches.filter(m => m.id !== matchId);
+      
       const success = await storage.setItem('matches', updatedMatches);
       
       if (!success) {
         throw new Error('Failed to close match');
       }
 
-      console.log('Match closed:', matchId);
+      setMatches(updatedMatches);
+      console.log('Match closed successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CLOSE_MATCH');
       console.error('Error closing match:', error);
@@ -414,6 +434,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         respondToMatch,
         confirmMatch,
         closeMatch,
+        refreshMatches,
       }}
     >
       {children}
@@ -424,7 +445,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 export function useSession() {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    // Return safe defaults instead of throwing
     console.warn('useSession must be used within a SessionProvider, using defaults');
     return {
       session: null,
@@ -437,6 +457,7 @@ export function useSession() {
       respondToMatch: async () => {},
       confirmMatch: async () => {},
       closeMatch: async () => {},
+      refreshMatches: async () => {},
     };
   }
   return context;

@@ -12,37 +12,52 @@ export default function PendingMatchScreen() {
   const { matches, respondToMatch } = useSession();
   const { user } = useAuth();
   const [isResponding, setIsResponding] = React.useState(false);
+  const [visible, setVisible] = React.useState(true);
 
   const pendingMatch = matches.find(
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
+  // Check if current user has already responded
   useEffect(() => {
-    if (pendingMatch && (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested')) {
+    if (!pendingMatch) {
+      console.log('No pending match found, closing screen');
+      setVisible(false);
+      setTimeout(() => {
+        router.back();
+      }, 100);
+      return;
+    }
+
+    if (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested') {
       const isCurrentUserInterested = 
         (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
         (pendingMatch.status === 'user_b_interested' && pendingMatch.userB.id === user?.id);
       
       if (isCurrentUserInterested && !isResponding) {
+        console.log('Current user already responded, navigating to confirm');
         setTimeout(() => {
           router.replace('/match/confirm');
-        }, 100);
+        }, 300);
       }
     }
-  }, [pendingMatch?.status]);
-
-  if (!pendingMatch) {
-    setTimeout(() => {
-      router.back();
-    }, 100);
-    return null;
-  }
+  }, [pendingMatch?.status, pendingMatch?.id]);
 
   const handleInterested = async () => {
-    if (isResponding) return;
+    if (isResponding || !pendingMatch) return;
+    
+    console.log('User interested in match:', pendingMatch.id);
     setIsResponding(true);
+    
     try {
       await respondToMatch(pendingMatch.id, true);
+      console.log('Response saved, navigating to confirm');
+      
+      // Navigate to confirm screen after a short delay
+      setTimeout(() => {
+        router.replace('/match/confirm');
+        setIsResponding(false);
+      }, 300);
     } catch (error) {
       console.error('Error responding to match:', error);
       setIsResponding(false);
@@ -50,13 +65,20 @@ export default function PendingMatchScreen() {
   };
 
   const handleNotNow = async () => {
-    if (isResponding) return;
+    if (isResponding || !pendingMatch) return;
+    
+    console.log('User declined match:', pendingMatch.id);
     setIsResponding(true);
+    
     try {
       await respondToMatch(pendingMatch.id, false);
+      console.log('Match declined, closing screen');
+      
+      setVisible(false);
       setTimeout(() => {
         router.back();
-      }, 100);
+        setIsResponding(false);
+      }, 200);
     } catch (error) {
       console.error('Error declining match:', error);
       setIsResponding(false);
@@ -65,13 +87,21 @@ export default function PendingMatchScreen() {
 
   const handleClose = () => {
     if (!isResponding) {
-      router.back();
+      console.log('User closed pending match screen');
+      setVisible(false);
+      setTimeout(() => {
+        router.back();
+      }, 100);
     }
   };
 
+  if (!pendingMatch) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={true}
+      visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={handleClose}

@@ -19,6 +19,7 @@ export default function HomeScreen() {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const glowAnim = React.useRef(new Animated.Value(0)).current;
   const [isCreatingDemo, setIsCreatingDemo] = React.useState(false);
+  const hasNavigatedRef = React.useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,12 +91,14 @@ export default function HomeScreen() {
   const handleDemoMatch = async () => {
     if (!user || isCreatingDemo) return;
     
+    console.log('Demo button pressed - creating mock match');
     setIsCreatingDemo(true);
+    hasNavigatedRef.current = true;
     hapticFeedback.medium();
     
     // Create a realistic demo match
     const mockMatch: Match = {
-      id: Date.now().toString(),
+      id: `demo-${Date.now()}`,
       sessionAId: 'demo-session-a',
       sessionBId: 'demo-session-b',
       userA: user,
@@ -103,10 +106,10 @@ export default function HomeScreen() {
         id: 'demo-user',
         email: 'sophie@example.com',
         name: 'Sophie',
-        interests: user.interests.slice(0, 2),
+        interests: user.interests.slice(0, 2).length > 0 ? user.interests.slice(0, 2) : ['Hiking', 'Photography'],
         createdAt: new Date().toISOString(),
       },
-      sharedInterests: user.interests.slice(0, 2),
+      sharedInterests: user.interests.slice(0, 2).length > 0 ? user.interests.slice(0, 2) : ['Hiking', 'Photography'],
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -116,32 +119,56 @@ export default function HomeScreen() {
       const updatedMatches = [...existingMatches, mockMatch];
       await storage.setItem('matches', updatedMatches);
       
+      console.log('Demo match created successfully:', mockMatch.id);
       hapticFeedback.success();
       
       // Navigate to pending match screen after a short delay
       setTimeout(() => {
-        setIsCreatingDemo(false);
+        console.log('Navigating to pending match screen');
         router.push('/match/pending');
-      }, 300);
+        // Reset the flag after navigation
+        setTimeout(() => {
+          setIsCreatingDemo(false);
+          hasNavigatedRef.current = false;
+        }, 500);
+      }, 200);
     } catch (error) {
       console.error('Error creating demo match:', error);
       hapticFeedback.error();
       setIsCreatingDemo(false);
+      hasNavigatedRef.current = false;
     }
   };
 
   const pendingMatches = matches.filter(m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested');
   const readyMatches = matches.filter(m => m.status === 'both_ready');
 
+  // Auto-navigate to match screens when matches are available
+  // But only if we're not already creating a demo match
   useEffect(() => {
-    if (pendingMatches.length > 0 && !isCreatingDemo) {
+    if (isCreatingDemo || hasNavigatedRef.current) {
+      console.log('Skipping auto-navigation - demo in progress');
+      return;
+    }
+
+    if (pendingMatches.length > 0) {
+      console.log('Auto-navigating to pending match');
+      hasNavigatedRef.current = true;
       hapticFeedback.success();
       router.push('/match/pending');
-    } else if (readyMatches.length > 0 && !isCreatingDemo) {
+      setTimeout(() => {
+        hasNavigatedRef.current = false;
+      }, 1000);
+    } else if (readyMatches.length > 0) {
+      console.log('Auto-navigating to ready match');
+      hasNavigatedRef.current = true;
       hapticFeedback.success();
       router.push('/match/ready');
+      setTimeout(() => {
+        hasNavigatedRef.current = false;
+      }, 1000);
     }
-  }, [matches.length]);
+  }, [matches.length, isCreatingDemo]);
 
   const getInterestEmoji = (interest: string) => {
     const emojiMap: { [key: string]: string } = {

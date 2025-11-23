@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -11,32 +11,76 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function ConfirmMatchScreen() {
   const { matches, confirmMatch } = useSession();
   const { user } = useAuth();
+  const [visible, setVisible] = React.useState(true);
+  const [isConfirming, setIsConfirming] = React.useState(false);
 
   const readyMatch = matches.find(
     m => m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
-  if (!readyMatch) {
-    router.back();
-    return null;
-  }
+  useEffect(() => {
+    if (!readyMatch) {
+      console.log('No match waiting for confirmation, going back');
+      setVisible(false);
+      setTimeout(() => {
+        router.back();
+      }, 100);
+      return;
+    }
+
+    // Check if both users have confirmed
+    const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_ready');
+    if (bothReady) {
+      console.log('Both users ready, navigating to ready screen');
+      setTimeout(() => {
+        router.replace('/match/ready');
+      }, 300);
+    }
+  }, [readyMatch?.id, matches]);
 
   const handleConfirm = async () => {
-    await confirmMatch(readyMatch.id);
-    router.replace('/match/ready');
+    if (!readyMatch || isConfirming) return;
+    
+    console.log('User confirmed match:', readyMatch.id);
+    setIsConfirming(true);
+    
+    try {
+      await confirmMatch(readyMatch.id);
+      console.log('Match confirmed, navigating to ready screen');
+      
+      setTimeout(() => {
+        router.replace('/match/ready');
+        setIsConfirming(false);
+      }, 300);
+    } catch (error) {
+      console.error('Error confirming match:', error);
+      setIsConfirming(false);
+    }
   };
 
   const handleNotInterested = () => {
-    router.back();
+    console.log('User not interested in confirming');
+    setVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 100);
   };
 
   const handleClose = () => {
-    router.back();
+    console.log('User closed confirm screen');
+    setVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 100);
   };
+
+  if (!readyMatch) {
+    return null;
+  }
 
   return (
     <Modal
-      visible={true}
+      visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
@@ -130,8 +174,9 @@ export default function ConfirmMatchScreen() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            style={[buttonStyles.primary, styles.button]}
+            style={[buttonStyles.primary, styles.button, isConfirming && { opacity: 0.6 }]}
             onPress={handleConfirm}
+            disabled={isConfirming}
           >
             <Text style={[buttonStyles.text]}>
               Yes, share my profile
@@ -139,8 +184,9 @@ export default function ConfirmMatchScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[buttonStyles.secondary, styles.button]}
+            style={[buttonStyles.secondary, styles.button, isConfirming && { opacity: 0.6 }]}
             onPress={handleNotInterested}
+            disabled={isConfirming}
           >
             <Text style={buttonStyles.textSecondary}>Not interested</Text>
           </TouchableOpacity>
