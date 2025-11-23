@@ -1,12 +1,32 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
+import { PaginationDots } from '@/components/PaginationDots';
 
 export default function SafetyScreen() {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(50)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 90,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <View style={styles.container}>
       <TouchableOpacity 
@@ -17,81 +37,91 @@ export default function SafetyScreen() {
           ios_icon_name="chevron.left" 
           android_material_icon_name="arrow_back" 
           size={24} 
-          color={colors.text} 
+          color={colors.card} 
         />
       </TouchableOpacity>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          styles.animatedContent,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
       >
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <IconSymbol 
-              ios_icon_name="shield.fill" 
-              android_material_icon_name="shield" 
-              size={64} 
-              color={colors.primary} 
-            />
-          </View>
-        </View>
-
-        <Text style={styles.title}>You are always in control</Text>
-        <Text style={styles.subtitle}>Your safety and comfort come first</Text>
-
-        <View style={styles.safetyContainer}>
-          <View style={styles.safetyItem}>
-            <View style={styles.iconCircleSmall}>
-              <IconSymbol 
-                ios_icon_name="eye.fill" 
-                android_material_icon_name="visibility" 
-                size={28} 
-                color={colors.primary} 
-              />
-            </View>
-            <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Only visible when Open</Text>
-              <Text style={styles.safetyDescription}>
-                Toggle off anytime to become invisible
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.safetyItem}>
-            <View style={styles.iconCircleSmall}>
-              <IconSymbol 
-                ios_icon_name="clock.fill" 
-                android_material_icon_name="schedule" 
-                size={28} 
-                color={colors.primary} 
-              />
-            </View>
-            <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Matches expire</Text>
-              <Text style={styles.safetyDescription}>
-                No pressure. If you don&apos;t respond, it disappears
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.safetyItem}>
-            <View style={styles.iconCircleSmall}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.iconContainer}>
+            <View style={styles.iconCircle}>
               <IconSymbol 
                 ios_icon_name="shield.fill" 
                 android_material_icon_name="shield" 
-                size={28} 
+                size={64} 
                 color={colors.primary} 
               />
             </View>
-            <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Block & report available</Text>
-              <Text style={styles.safetyDescription}>
-                You can always block or report anyone
-              </Text>
+          </View>
+
+          <Text style={styles.title}>You are always in control</Text>
+          <Text style={styles.subtitle}>Your safety and comfort come first</Text>
+
+          <View style={styles.safetyContainer}>
+            <View style={styles.safetyItem}>
+              <View style={styles.iconCircleSmall}>
+                <IconSymbol 
+                  ios_icon_name="eye.fill" 
+                  android_material_icon_name="visibility" 
+                  size={28} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.safetyContent}>
+                <Text style={styles.safetyTitle}>Only visible when Open</Text>
+                <Text style={styles.safetyDescription}>
+                  Toggle off anytime to become invisible
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.safetyItem}>
+              <View style={styles.iconCircleSmall}>
+                <IconSymbol 
+                  ios_icon_name="clock.fill" 
+                  android_material_icon_name="schedule" 
+                  size={28} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.safetyContent}>
+                <Text style={styles.safetyTitle}>Matches expire</Text>
+                <Text style={styles.safetyDescription}>
+                  No pressure. If you don&apos;t respond, it disappears
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.safetyItem}>
+              <View style={styles.iconCircleSmall}>
+                <IconSymbol 
+                  ios_icon_name="shield.fill" 
+                  android_material_icon_name="shield" 
+                  size={28} 
+                  color={colors.primary} 
+                />
+              </View>
+              <View style={styles.safetyContent}>
+                <Text style={styles.safetyTitle}>Block & report available</Text>
+                <Text style={styles.safetyDescription}>
+                  You can always block or report anyone
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
@@ -101,11 +131,7 @@ export default function SafetyScreen() {
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
         
-        <View style={styles.pagination}>
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-        </View>
+        <PaginationDots total={3} current={2} />
       </View>
     </View>
   );
@@ -124,14 +150,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
+  },
+  animatedContent: {
+    flex: 1,
   },
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 108 : 120,
@@ -230,6 +259,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
@@ -246,21 +276,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.card,
     letterSpacing: 0.2,
-  },
-  pagination: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    width: 28,
-    backgroundColor: colors.primary,
   },
 });

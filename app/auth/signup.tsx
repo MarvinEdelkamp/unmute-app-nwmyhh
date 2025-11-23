@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
@@ -60,7 +60,11 @@ export default function SignUpScreen() {
   const isFormValid = name.trim().length > 0 && email.trim().length > 0 && email.includes('@');
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -109,6 +113,7 @@ export default function SignUpScreen() {
                 onChangeText={setName}
                 autoCapitalize="words"
                 autoCorrect={false}
+                returnKeyType="next"
               />
             </View>
           </View>
@@ -131,6 +136,8 @@ export default function SignUpScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={handleContinue}
               />
             </View>
             <Text style={styles.inputNote}>
@@ -164,7 +171,7 @@ export default function SignUpScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -280,6 +287,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     alignItems: 'center',

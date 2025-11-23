@@ -1,12 +1,32 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
+import { PaginationDots } from '@/components/PaginationDots';
 
 export default function HowItWorksScreen() {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(50)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 90,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <View style={styles.container}>
       <TouchableOpacity 
@@ -21,73 +41,83 @@ export default function HowItWorksScreen() {
         />
       </TouchableOpacity>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          styles.animatedContent,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
       >
-        <Text style={styles.title}>How it works</Text>
-        <Text style={styles.subtitle}>Three simple steps</Text>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>How it works</Text>
+          <Text style={styles.subtitle}>Three simple steps</Text>
 
-        <View style={styles.stepsContainer}>
-          <View style={styles.step}>
-            <View style={styles.stepLeft}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
+          <View style={styles.stepsContainer}>
+            <View style={styles.step}>
+              <View style={styles.stepLeft}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <View style={styles.stepLine} />
               </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Toggle &quot;Open&quot;</Text>
-              <Text style={styles.stepDescription}>
-                When you&apos;re ready to connect, tap Open. You&apos;re only visible while it&apos;s on.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.step}>
-            <View style={styles.stepLeft}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Get matched nearby</Text>
-              <Text style={styles.stepDescription}>
-                When someone here shares your interests and is also Open, you both get a quiet notification.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.step}>
-            <View style={styles.stepLeft}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Toggle &quot;Open&quot;</Text>
+                <Text style={styles.stepDescription}>
+                  When you&apos;re ready to connect, tap Open. You&apos;re only visible while it&apos;s on.
+                </Text>
               </View>
             </View>
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Say hi in person</Text>
-              <Text style={styles.stepDescription}>
-                The app creates the opportunity. The real conversation happens face to face.
-              </Text>
+
+            <View style={styles.step}>
+              <View style={styles.stepLeft}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <View style={styles.stepLine} />
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Get matched nearby</Text>
+                <Text style={styles.stepDescription}>
+                  When someone here shares your interests and is also Open, you both get a quiet notification.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.step}>
+              <View style={styles.stepLeft}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Say hi in person</Text>
+                <Text style={styles.stepDescription}>
+                  The app creates the opportunity. The real conversation happens face to face.
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.infoBox}>
-          <View style={styles.infoIconContainer}>
-            <IconSymbol 
-              ios_icon_name="lock.fill" 
-              android_material_icon_name="lock" 
-              size={20} 
-              color={colors.primary} 
-            />
+          <View style={styles.infoBox}>
+            <View style={styles.infoIconContainer}>
+              <IconSymbol 
+                ios_icon_name="lock.fill" 
+                android_material_icon_name="lock" 
+                size={20} 
+                color={colors.primary} 
+              />
+            </View>
+            <Text style={styles.infoText}>
+              We never show your exact location. Matches expire quickly if no one responds.
+            </Text>
           </View>
-          <Text style={styles.infoText}>
-            We never show your exact location. Matches expire quickly if no one responds.
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
@@ -97,11 +127,7 @@ export default function HowItWorksScreen() {
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
         
-        <View style={styles.pagination}>
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-        </View>
+        <PaginationDots total={3} current={1} />
       </View>
     </View>
   );
@@ -120,14 +146,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
+  },
+  animatedContent: {
+    flex: 1,
   },
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 108 : 120,
@@ -246,6 +275,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
@@ -262,21 +292,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.card,
     letterSpacing: 0.2,
-  },
-  pagination: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    width: 28,
-    backgroundColor: colors.primary,
   },
 });

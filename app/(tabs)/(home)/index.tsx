@@ -19,31 +19,33 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (isOpen) {
+      // Subtle breathing animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(scaleAnim, {
-            toValue: 1.02,
-            duration: 2000,
+            toValue: 1.015,
+            duration: 3000,
             useNativeDriver: true,
           }),
           Animated.timing(scaleAnim, {
             toValue: 1,
-            duration: 2000,
+            duration: 3000,
             useNativeDriver: true,
           }),
         ])
       ).start();
 
+      // Subtle glow animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
             toValue: 1,
-            duration: 2000,
+            duration: 3000,
             useNativeDriver: true,
           }),
           Animated.timing(glowAnim, {
             toValue: 0,
-            duration: 2000,
+            duration: 3000,
             useNativeDriver: true,
           }),
         ])
@@ -173,12 +175,12 @@ export default function HomeScreen() {
                     backgroundColor: theme.primary,
                     opacity: glowAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.2, 0.4],
+                      outputRange: [0.1, 0.2],
                     }),
                     transform: [{
                       scale: glowAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [1, 1.2],
+                        outputRange: [1, 1.08],
                       }),
                     }],
                   },
@@ -258,7 +260,7 @@ export default function HomeScreen() {
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={index} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
+                <View key={`interest-${index}`} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
                 </View>
@@ -323,12 +325,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
     position: 'relative',
+    height: 280,
   },
   glowOuter: {
     position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
   },
   progressRingContainer: {
     position: 'absolute',

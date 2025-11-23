@@ -1,82 +1,112 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
+import { PaginationDots } from '@/components/PaginationDots';
 
 export default function WelcomeScreen() {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(50)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 90,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <View style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          styles.animatedContent,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
       >
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <IconSymbol 
-              ios_icon_name="person.2.fill" 
-              android_material_icon_name="people" 
-              size={56} 
-              color={colors.primary} 
-            />
-            <View style={styles.locationBadge}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.iconContainer}>
+            <View style={styles.iconCircle}>
               <IconSymbol 
-                ios_icon_name="mappin.circle.fill" 
-                android_material_icon_name="location_on" 
-                size={28} 
-                color={colors.card} 
+                ios_icon_name="person.2.fill" 
+                android_material_icon_name="people" 
+                size={56} 
+                color={colors.primary} 
               />
+              <View style={styles.locationBadge}>
+                <IconSymbol 
+                  ios_icon_name="mappin.circle.fill" 
+                  android_material_icon_name="location_on" 
+                  size={28} 
+                  color={colors.card} 
+                />
+              </View>
             </View>
           </View>
-        </View>
 
-        <Text style={styles.title}>Unmute</Text>
-        <Text style={styles.tagline}>Say hi for real</Text>
-        
-        <Text style={styles.description}>
-          Meet people nearby who share your interests. Right here, right now, in real life.
-        </Text>
+          <Text style={styles.title}>Unmute</Text>
+          <Text style={styles.tagline}>Say hi for real</Text>
+          
+          <Text style={styles.description}>
+            Meet people nearby who share your interests. Right here, right now, in real life.
+          </Text>
 
-        <View style={styles.featureContainer}>
-          <View style={styles.feature}>
-            <View style={styles.checkmark}>
-              <IconSymbol 
-                ios_icon_name="checkmark" 
-                android_material_icon_name="check" 
-                size={18} 
-                color={colors.card} 
-              />
+          <View style={styles.featureContainer}>
+            <View style={styles.feature}>
+              <View style={styles.checkmark}>
+                <IconSymbol 
+                  ios_icon_name="checkmark" 
+                  android_material_icon_name="check" 
+                  size={18} 
+                  color={colors.card} 
+                />
+              </View>
+              <Text style={styles.featureText}>No feeds, no scrolling, no social graph</Text>
             </View>
-            <Text style={styles.featureText}>No feeds, no scrolling, no social graph</Text>
-          </View>
 
-          <View style={styles.feature}>
-            <View style={styles.checkmark}>
-              <IconSymbol 
-                ios_icon_name="checkmark" 
-                android_material_icon_name="check" 
-                size={18} 
-                color={colors.card} 
-              />
+            <View style={styles.feature}>
+              <View style={styles.checkmark}>
+                <IconSymbol 
+                  ios_icon_name="checkmark" 
+                  android_material_icon_name="check" 
+                  size={18} 
+                  color={colors.card} 
+                />
+              </View>
+              <Text style={styles.featureText}>Only when you&apos;re open to connect</Text>
             </View>
-            <Text style={styles.featureText}>Only when you&apos;re open to connect</Text>
-          </View>
 
-          <View style={styles.feature}>
-            <View style={styles.checkmark}>
-              <IconSymbol 
-                ios_icon_name="checkmark" 
-                android_material_icon_name="check" 
-                size={18} 
-                color={colors.card} 
-              />
+            <View style={styles.feature}>
+              <View style={styles.checkmark}>
+                <IconSymbol 
+                  ios_icon_name="checkmark" 
+                  android_material_icon_name="check" 
+                  size={18} 
+                  color={colors.card} 
+                />
+              </View>
+              <Text style={styles.featureText}>Your privacy is protected</Text>
             </View>
-            <Text style={styles.featureText}>Your privacy is protected</Text>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
@@ -86,11 +116,7 @@ export default function WelcomeScreen() {
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
         
-        <View style={styles.pagination}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
+        <PaginationDots total={3} current={0} />
       </View>
     </View>
   );
@@ -100,6 +126,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  animatedContent: {
+    flex: 1,
   },
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 80 : 100,
@@ -216,6 +245,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
@@ -232,21 +262,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.card,
     letterSpacing: 0.2,
-  },
-  pagination: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    width: 28,
-    backgroundColor: colors.primary,
   },
 });

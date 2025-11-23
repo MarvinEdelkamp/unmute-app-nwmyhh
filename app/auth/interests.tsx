@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,7 @@ export default function InterestsScreen() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
   const [loading, setLoading] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
@@ -103,6 +104,77 @@ export default function InterestsScreen() {
       'Dancing': '💃',
       'Movies': '🎬',
       'Food': '🍕',
+      'Swimming': '🏊',
+      'Gym': '🏋️',
+      'Basketball': '🏀',
+      'Soccer': '⚽',
+      'Tennis': '🎾',
+      'Rock Climbing': '🧗',
+      'Live Music': '🎸',
+      'Jazz': '🎷',
+      'Rock': '🎸',
+      'Electronic': '🎧',
+      'Hip Hop': '🎤',
+      'Classical': '🎻',
+      'Indie': '🎸',
+      'Playing Guitar': '🎸',
+      'DJing': '🎧',
+      'Singing': '🎤',
+      'Craft Beer': '🍺',
+      'Wine': '🍷',
+      'Baking': '🧁',
+      'Vegan Food': '🥗',
+      'Street Food': '🌮',
+      'Fine Dining': '🍽️',
+      'Food Photography': '📸',
+      'Mixology': '🍸',
+      'Painting': '🎨',
+      'Museums': '🏛️',
+      'Theater': '🎭',
+      'Film': '🎬',
+      'Writing': '✍️',
+      'Poetry': '📝',
+      'Dance': '💃',
+      'Sculpture': '🗿',
+      'Street Art': '🎨',
+      'Coding': '💻',
+      'AI': '🤖',
+      'Startups': '🚀',
+      'VR/AR': '🥽',
+      'Crypto': '₿',
+      'Robotics': '🤖',
+      'Open Source': '💻',
+      'Web3': '🌐',
+      'Mobile Apps': '📱',
+      'Board Games': '🎲',
+      'Chess': '♟️',
+      'Video Games': '🎮',
+      'Card Games': '🃏',
+      'Poker': '🃏',
+      'Trivia': '❓',
+      'Escape Rooms': '🔐',
+      'D&D': '🎲',
+      'Strategy Games': '♟️',
+      'Party Games': '🎉',
+      'Book Clubs': '📚',
+      'Science Fiction': '🚀',
+      'Non-Fiction': '📖',
+      'Philosophy': '🤔',
+      'History': '📜',
+      'Psychology': '🧠',
+      'Languages': '🗣️',
+      'Podcasts': '🎙️',
+      'Documentaries': '🎥',
+      'Networking': '🤝',
+      'Volunteering': '❤️',
+      'Community Events': '🎪',
+      'Meetups': '👥',
+      'Public Speaking': '🎤',
+      'Activism': '✊',
+      'Sustainability': '♻️',
+      'Entrepreneurship': '💼',
+      'Mentoring': '👨‍🏫',
+      'Coworking': '💼',
     };
     return emojiMap[interest] || '✨';
   };
@@ -110,10 +182,16 @@ export default function InterestsScreen() {
   const progress = selectedInterests.length / 5;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <ScrollView 
+        ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: theme.text }]}>What are you into?</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -121,7 +199,7 @@ export default function InterestsScreen() {
         </Text>
 
         <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
+          <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
             <View 
               style={[
                 styles.progressFill, 
@@ -140,9 +218,13 @@ export default function InterestsScreen() {
         {selectedInterests.length > 0 && (
           <View style={styles.selectedSection}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Your interests:</Text>
-            <View style={styles.selectedGrid}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectedScrollContent}
+            >
               {selectedInterests.map((interest, index) => (
-                <View key={index} style={[styles.selectedChip, { backgroundColor: theme.primary }, shadows.sm]}>
+                <View key={`selected-${index}`} style={[styles.selectedChip, { backgroundColor: theme.primary }, shadows.sm]}>
                   <Text style={styles.selectedEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={[styles.selectedText, { color: theme.card }]}>{interest}</Text>
                   <TouchableOpacity
@@ -158,22 +240,26 @@ export default function InterestsScreen() {
                   </TouchableOpacity>
                 </View>
               ))}
-            </View>
+            </ScrollView>
           </View>
         )}
 
         {interestCategories.map((category, categoryIndex) => (
-          <View key={categoryIndex} style={styles.category}>
+          <View key={`category-${categoryIndex}`} style={styles.category}>
             <View style={[styles.categoryHeader, { backgroundColor: theme.primary }, shadows.sm]}>
               <Text style={[styles.categoryTitle, { color: theme.card }]}>{category.name}</Text>
             </View>
 
-            <View style={styles.interestsGrid}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.interestsScrollContent}
+            >
               {category.interests.map((interest, interestIndex) => {
                 const isSelected = selectedInterests.includes(interest);
                 return (
                   <TouchableOpacity
-                    key={interestIndex}
+                    key={`interest-${categoryIndex}-${interestIndex}`}
                     style={[
                       styles.interestCard,
                       { 
@@ -197,7 +283,7 @@ export default function InterestsScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         ))}
 
@@ -215,12 +301,17 @@ export default function InterestsScreen() {
                   color: theme.text,
                 }
               ]}
-              placeholder="e.g. 'sourdough bread'"
+              placeholder="e.g. 'sourdough bread', 'looking for a..."
               placeholderTextColor={theme.textSecondary}
               value={customInterest}
               onChangeText={setCustomInterest}
               onSubmitEditing={addCustomInterest}
               returnKeyType="done"
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
             />
             <TouchableOpacity
               style={[
@@ -239,7 +330,7 @@ export default function InterestsScreen() {
             </TouchableOpacity>
           </View>
           <Text style={[styles.customHint, { color: theme.textSecondary }]}>
-            We&apos;ll match you with people who share similar interests
+            We&apos;ll match you with people who share similar interests, even if worded differently
           </Text>
         </View>
       </ScrollView>
@@ -261,13 +352,13 @@ export default function InterestsScreen() {
           ) : (
             <Text style={[styles.buttonText, { color: theme.card }]}>
               {selectedInterests.length < 3 
-                ? `Select ${3 - selectedInterests.length} more` 
+                ? `Select at least ${3 - selectedInterests.length} more` 
                 : 'Continue'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -278,7 +369,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.xxl,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   title: {
     ...typography.title,
@@ -293,7 +384,6 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: borderRadius.round,
     overflow: 'hidden',
     marginBottom: spacing.sm,
@@ -312,10 +402,9 @@ const styles = StyleSheet.create({
     ...typography.bodyBold,
     marginBottom: spacing.md,
   },
-  selectedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  selectedScrollContent: {
     gap: spacing.sm,
+    paddingRight: spacing.xxl,
   },
   selectedChip: {
     flexDirection: 'row',
@@ -355,17 +444,16 @@ const styles = StyleSheet.create({
   categoryTitle: {
     ...typography.bodyBold,
   },
-  interestsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  interestsScrollContent: {
     gap: spacing.md,
+    paddingRight: spacing.xxl,
   },
   interestCard: {
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.lg,
     alignItems: 'center',
-    minWidth: 100,
+    minWidth: 110,
     borderWidth: 1.5,
   },
   interestEmoji: {
@@ -375,6 +463,7 @@ const styles = StyleSheet.create({
   interestText: {
     ...typography.caption,
     fontWeight: '500',
+    textAlign: 'center',
   },
   customSection: {
     marginTop: spacing.md,
@@ -419,13 +508,15 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg + spacing.xs,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 56,
   },
   buttonText: {
     ...typography.bodyBold,
+    fontSize: 17,
   },
   buttonDisabled: {
     opacity: 0.4,
