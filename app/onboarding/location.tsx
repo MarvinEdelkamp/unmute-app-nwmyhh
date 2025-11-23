@@ -1,12 +1,44 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
+import * as Location from 'expo-location';
 
-export default function WelcomeScreen() {
+export default function LocationScreen() {
+  const [loading, setLoading] = useState(false);
+
+  const handleEnableLocation = async () => {
+    try {
+      setLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status === 'granted') {
+        router.push('/auth/signup');
+      } else {
+        Alert.alert(
+          'Location Permission',
+          'Location access is needed to find people nearby. You can enable it later in settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Go to Settings', onPress: () => Location.requestForegroundPermissionsAsync() }
+          ]
+        );
+      }
+    } catch (error) {
+      console.log('Location permission error:', error);
+      Alert.alert('Error', 'Failed to request location permission');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    router.push('/auth/signup');
+  };
+
   return (
     <View style={[commonStyles.container, styles.container]}>
       <ScrollView 
@@ -16,27 +48,26 @@ export default function WelcomeScreen() {
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
             <IconSymbol 
-              ios_icon_name="person.2.fill" 
-              android_material_icon_name="people" 
-              size={48} 
+              ios_icon_name="mappin.circle.fill" 
+              android_material_icon_name="location_on" 
+              size={64} 
               color={colors.primary} 
             />
-            <View style={styles.locationBadge}>
+            <View style={styles.lockBadge}>
               <IconSymbol 
-                ios_icon_name="mappin.circle.fill" 
-                android_material_icon_name="location_on" 
-                size={28} 
-                color={colors.card} 
+                ios_icon_name="lock.fill" 
+                android_material_icon_name="lock" 
+                size={16} 
+                color={colors.primary} 
               />
             </View>
           </View>
         </View>
 
-        <Text style={styles.title}>Unmute</Text>
-        <Text style={styles.tagline}>Say hi for real</Text>
+        <Text style={styles.title}>Help Unmute find people near you</Text>
         
         <Text style={styles.description}>
-          Meet people nearby who share your interests. Right here, right now, in real life.
+          Location access lets us connect you with people nearby
         </Text>
 
         <View style={styles.featureContainer}>
@@ -49,7 +80,7 @@ export default function WelcomeScreen() {
                 color={colors.card} 
               />
             </View>
-            <Text style={styles.featureText}>No feeds, no scrolling, no social graph</Text>
+            <Text style={styles.featureText}>Only while you&apos;re Open to connect</Text>
           </View>
 
           <View style={styles.feature}>
@@ -61,19 +92,7 @@ export default function WelcomeScreen() {
                 color={colors.card} 
               />
             </View>
-            <Text style={styles.featureText}>Only when you&apos;re open to connect</Text>
-          </View>
-
-          <View style={styles.feature}>
-            <View style={styles.checkmark}>
-              <IconSymbol 
-                ios_icon_name="checkmark" 
-                android_material_icon_name="check" 
-                size={18} 
-                color={colors.card} 
-              />
-            </View>
-            <Text style={styles.featureText}>Your privacy is protected</Text>
+            <Text style={styles.featureText}>We never show your exact location to others</Text>
           </View>
         </View>
       </ScrollView>
@@ -81,16 +100,20 @@ export default function WelcomeScreen() {
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
           style={[buttonStyles.primary, styles.button]}
-          onPress={() => router.push('/onboarding/how-it-works')}
+          onPress={handleEnableLocation}
+          disabled={loading}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>Continue</Text>
+          <Text style={[buttonStyles.text, { color: colors.card }]}>
+            {loading ? 'Requesting...' : 'Enable Location'}
+          </Text>
         </TouchableOpacity>
         
-        <View style={styles.pagination}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={handleSkip}
+        >
+          <Text style={styles.skipText}>Not now</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -102,57 +125,50 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 32,
-    paddingBottom: 160,
+    paddingTop: 80,
+    paddingBottom: 180,
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
     marginBottom: 40,
-    marginTop: 80,
   },
   iconCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  locationBadge: {
+  lockBadge: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.card,
+    borderColor: colors.highlight,
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: colors.primary,
-    textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   description: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 40,
-    paddingHorizontal: 8,
   },
   featureContainer: {
     width: '100%',
@@ -189,18 +205,12 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
   },
-  pagination: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
+  skipButton: {
+    paddingVertical: 12,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
+  skipText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });

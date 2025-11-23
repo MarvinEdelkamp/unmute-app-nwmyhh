@@ -9,98 +9,103 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function SafetyScreen() {
   return (
     <View style={[commonStyles.container, styles.container]}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <IconSymbol 
+          ios_icon_name="chevron.left" 
+          android_material_icon_name="arrow_back" 
+          size={24} 
+          color={colors.text} 
+        />
+      </TouchableOpacity>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconContainer}>
-          <IconSymbol 
-            ios_icon_name="shield.checkered" 
-            android_material_icon_name="verified_user" 
-            size={64} 
-            color={colors.secondary} 
-          />
+          <View style={styles.iconCircle}>
+            <IconSymbol 
+              ios_icon_name="shield.fill" 
+              android_material_icon_name="shield" 
+              size={64} 
+              color={colors.primary} 
+            />
+          </View>
         </View>
 
-        <Text style={[commonStyles.title, styles.title]}>Your safety matters</Text>
+        <Text style={styles.title}>You are always in control</Text>
+        <Text style={styles.subtitle}>Your safety and comfort come first</Text>
 
         <View style={styles.safetyContainer}>
           <View style={styles.safetyItem}>
-            <IconSymbol 
-              ios_icon_name="eye.slash.fill" 
-              android_material_icon_name="visibility_off" 
-              size={24} 
-              color={colors.primary} 
-            />
+            <View style={styles.iconCircleSmall}>
+              <IconSymbol 
+                ios_icon_name="eye.fill" 
+                android_material_icon_name="visibility" 
+                size={24} 
+                color={colors.primary} 
+              />
+            </View>
             <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Visible only when Open</Text>
+              <Text style={styles.safetyTitle}>Only visible when Open</Text>
               <Text style={styles.safetyDescription}>
-                You&apos;re only discoverable when you choose to be
+                Toggle off anytime to become invisible
               </Text>
             </View>
           </View>
 
           <View style={styles.safetyItem}>
-            <IconSymbol 
-              ios_icon_name="location.slash.fill" 
-              android_material_icon_name="location_off" 
-              size={24} 
-              color={colors.primary} 
-            />
+            <View style={styles.iconCircleSmall}>
+              <IconSymbol 
+                ios_icon_name="clock.fill" 
+                android_material_icon_name="schedule" 
+                size={24} 
+                color={colors.primary} 
+              />
+            </View>
             <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Approximate location only</Text>
+              <Text style={styles.safetyTitle}>Matches expire</Text>
               <Text style={styles.safetyDescription}>
-                Your exact location is never shown to anyone
+                No pressure. If you don&apos;t respond, it disappears
               </Text>
             </View>
           </View>
 
           <View style={styles.safetyItem}>
-            <IconSymbol 
-              ios_icon_name="hand.raised.fill" 
-              android_material_icon_name="block" 
-              size={24} 
-              color={colors.primary} 
-            />
+            <View style={styles.iconCircleSmall}>
+              <IconSymbol 
+                ios_icon_name="shield.fill" 
+                android_material_icon_name="shield" 
+                size={24} 
+                color={colors.primary} 
+              />
+            </View>
             <View style={styles.safetyContent}>
               <Text style={styles.safetyTitle}>Block & report available</Text>
               <Text style={styles.safetyDescription}>
-                You can block users and report problems anytime
+                You can always block or report anyone
               </Text>
             </View>
           </View>
-
-          <View style={styles.safetyItem}>
-            <IconSymbol 
-              ios_icon_name="clock.fill" 
-              android_material_icon_name="schedule" 
-              size={24} 
-              color={colors.primary} 
-            />
-            <View style={styles.safetyContent}>
-              <Text style={styles.safetyTitle}>Sessions auto-close</Text>
-              <Text style={styles.safetyDescription}>
-                Your Open status automatically turns off after 45 minutes
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.tipBox}>
-          <Text style={styles.tipTitle}>💡 Safety tip</Text>
-          <Text style={styles.tipText}>
-            Always meet in public places and trust your instincts. If something doesn&apos;t feel right, it&apos;s okay to decline a match.
-          </Text>
         </View>
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View style={styles.bottomContainer}>
         <TouchableOpacity 
           style={[buttonStyles.primary, styles.button]}
-          onPress={() => router.push('/auth/signup')}
+          onPress={() => router.push('/onboarding/location')}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>Get started</Text>
+          <Text style={[buttonStyles.text, { color: colors.card }]}>Get Started</Text>
         </TouchableOpacity>
+        
+        <View style={styles.pagination}>
+          <View style={styles.dot} />
+          <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive]} />
+        </View>
       </View>
     </View>
   );
@@ -110,68 +115,107 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 60,
   },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 120,
+    paddingHorizontal: 32,
+    paddingTop: 20,
+    paddingBottom: 160,
+    alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
+    marginTop: 40,
+  },
+  iconCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: colors.highlight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 40,
   },
   safetyContainer: {
-    gap: 16,
-    marginBottom: 24,
+    width: '100%',
+    gap: 20,
   },
   safetyItem: {
     flexDirection: 'row',
     gap: 16,
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
+    alignItems: 'flex-start',
+  },
+  iconCircleSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.highlight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   safetyContent: {
     flex: 1,
-    gap: 4,
+    paddingTop: 4,
   },
   safetyTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 4,
   },
   safetyDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  tipBox: {
-    backgroundColor: colors.highlight,
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  tipTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  tipText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  buttonContainer: {
+  bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     padding: 24,
     backgroundColor: colors.background,
+    alignItems: 'center',
+    gap: 16,
   },
   button: {
     width: '100%',
+  },
+  pagination: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
   },
 });

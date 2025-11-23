@@ -2,19 +2,19 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#F8F9FA',
-  text: '#2C3E50',
-  textSecondary: '#7F8C8D',
-  primary: '#4ECDC4',
-  primaryLight: '#A8E6CF',
+  background: '#FFFFFF',
+  text: '#1A1A1A',
+  textSecondary: '#6B7280',
+  primary: '#4A9B94',
+  primaryLight: '#A8DDD8',
   secondary: '#E8F5F4',
   accent: '#FFD93D',
   card: '#FFFFFF',
-  highlight: '#E8F5F4',
+  highlight: '#D4EEEC',
   error: '#E74C3C',
   success: '#2ECC71',
-  border: '#E0E0E0',
-  disabled: '#ECF0F1',
+  border: '#E5E7EB',
+  disabled: '#F3F4F6',
   shadow: 'rgba(0, 0, 0, 0.08)',
 };
 

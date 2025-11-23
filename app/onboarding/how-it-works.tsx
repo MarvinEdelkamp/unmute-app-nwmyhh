@@ -9,102 +9,97 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function HowItWorksScreen() {
   return (
     <View style={[commonStyles.container, styles.container]}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <IconSymbol 
+          ios_icon_name="chevron.left" 
+          android_material_icon_name="arrow_back" 
+          size={24} 
+          color={colors.text} 
+        />
+      </TouchableOpacity>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[commonStyles.title, styles.title]}>How it works</Text>
+        <Text style={styles.title}>How it works</Text>
+        <Text style={styles.subtitle}>Three simple steps</Text>
 
-        <View style={styles.stepContainer}>
+        <View style={styles.stepsContainer}>
           <View style={styles.step}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>1</Text>
+            <View style={styles.stepLeft}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <View style={styles.stepLine} />
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeader}>
-                <IconSymbol 
-                  ios_icon_name="heart.fill" 
-                  android_material_icon_name="favorite" 
-                  size={24} 
-                  color={colors.primary} 
-                />
-                <Text style={styles.stepTitle}>Choose your interests</Text>
-              </View>
+              <Text style={styles.stepTitle}>Toggle &quot;Open&quot;</Text>
               <Text style={styles.stepDescription}>
-                Pick 3-7 things you&apos;re passionate about
+                When you&apos;re ready to connect, tap Open. You&apos;re only visible while it&apos;s on.
               </Text>
             </View>
           </View>
 
           <View style={styles.step}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>2</Text>
+            <View style={styles.stepLeft}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <View style={styles.stepLine} />
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeader}>
-                <IconSymbol 
-                  ios_icon_name="power" 
-                  android_material_icon_name="power_settings_new" 
-                  size={24} 
-                  color={colors.primary} 
-                />
-                <Text style={styles.stepTitle}>Turn &quot;Open&quot; on</Text>
-              </View>
+              <Text style={styles.stepTitle}>Get matched nearby</Text>
               <Text style={styles.stepDescription}>
-                When you&apos;re ready to connect, toggle your status to Open
+                When someone here shares your interests and is also Open, you both get a quiet notification.
               </Text>
             </View>
           </View>
 
           <View style={styles.step}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>3</Text>
+            <View style={styles.stepLeft}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
             </View>
             <View style={styles.stepContent}>
-              <View style={styles.stepHeader}>
-                <IconSymbol 
-                  ios_icon_name="sparkles" 
-                  android_material_icon_name="auto_awesome" 
-                  size={24} 
-                  color={colors.primary} 
-                />
-                <Text style={styles.stepTitle}>Get matched</Text>
-              </View>
+              <Text style={styles.stepTitle}>Say hi in person</Text>
               <Text style={styles.stepDescription}>
-                If someone nearby with shared interests is also Open, you&apos;ll both get a match
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.step}>
-            <View style={styles.stepNumber}>
-              <Text style={styles.stepNumberText}>4</Text>
-            </View>
-            <View style={styles.stepContent}>
-              <View style={styles.stepHeader}>
-                <IconSymbol 
-                  ios_icon_name="hand.wave.fill" 
-                  android_material_icon_name="waving_hand" 
-                  size={24} 
-                  color={colors.primary} 
-                />
-                <Text style={styles.stepTitle}>Say hi in person</Text>
-              </View>
-              <Text style={styles.stepDescription}>
-                Use quick coordination to find each other and meet face-to-face
+                The app creates the opportunity. The real conversation happens face to face.
               </Text>
             </View>
           </View>
         </View>
+
+        <View style={styles.infoBox}>
+          <IconSymbol 
+            ios_icon_name="lock.fill" 
+            android_material_icon_name="lock" 
+            size={20} 
+            color={colors.primary} 
+          />
+          <Text style={styles.infoText}>
+            We never show your exact location. Matches expire quickly if no one responds.
+          </Text>
+        </View>
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View style={styles.bottomContainer}>
         <TouchableOpacity 
           style={[buttonStyles.primary, styles.button]}
           onPress={() => router.push('/onboarding/safety')}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>Next</Text>
+          <Text style={[buttonStyles.text, { color: colors.card }]}>Continue</Text>
         </TouchableOpacity>
+        
+        <View style={styles.pagination}>
+          <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive]} />
+          <View style={styles.dot} />
+        </View>
       </View>
     </View>
   );
@@ -114,65 +109,118 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 60,
   },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 120,
+    paddingHorizontal: 32,
+    paddingTop: 20,
+    paddingBottom: 160,
   },
   title: {
-    textAlign: 'center',
-    marginBottom: 32,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
   },
-  stepContainer: {
-    gap: 20,
+  subtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 40,
+  },
+  stepsContainer: {
+    marginBottom: 32,
   },
   step: {
     flexDirection: 'row',
     gap: 16,
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 16,
+    marginBottom: 24,
+  },
+  stepLeft: {
+    alignItems: 'center',
   },
   stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepNumberText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.card,
   },
+  stepLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: colors.border,
+    marginTop: 8,
+  },
   stepContent: {
     flex: 1,
-    gap: 8,
-  },
-  stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    paddingTop: 4,
   },
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 8,
   },
   stepDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: colors.highlight,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'flex-start',
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
     lineHeight: 20,
   },
-  buttonContainer: {
+  bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     padding: 24,
     backgroundColor: colors.background,
+    alignItems: 'center',
+    gap: 16,
   },
   button: {
     width: '100%',
+  },
+  pagination: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
   },
 });
