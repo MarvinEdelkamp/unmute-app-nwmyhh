@@ -1,15 +1,19 @@
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSession } from '@/contexts/SessionContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
+import { ProgressRing } from '@/components/ProgressRing';
+import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
+import { hapticFeedback } from '@/utils/haptics';
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const { isOpen, remainingTime, openSession, closeSession, extendSession, matches } = useSession();
+  const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const glowAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -52,7 +56,8 @@ export default function HomeScreen() {
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    return `${mins} min`;
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const formatEndTime = (seconds: number) => {
@@ -61,15 +66,20 @@ export default function HomeScreen() {
   };
 
   const handleToggle = async () => {
+    hapticFeedback.medium();
     if (isOpen) {
       await closeSession();
+      hapticFeedback.success();
     } else {
       await openSession();
+      hapticFeedback.success();
     }
   };
 
   const handleExtend = async () => {
+    hapticFeedback.light();
     await extendSession();
+    hapticFeedback.success();
   };
 
   const pendingMatches = matches.filter(m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested');
@@ -77,8 +87,10 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (pendingMatches.length > 0) {
+      hapticFeedback.success();
       router.push('/match/pending');
     } else if (readyMatches.length > 0) {
+      hapticFeedback.success();
       router.push('/match/ready');
     }
   }, [matches]);
@@ -106,32 +118,47 @@ export default function HomeScreen() {
     return emojiMap[interest] || '✨';
   };
 
+  // Calculate progress for timer ring (0 to 1)
+  const maxTime = 45 * 60; // 45 minutes in seconds
+  const progress = isOpen ? remainingTime / maxTime : 0;
+
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.appTitle}>Unmute</Text>
-          <Text style={styles.location}>Munich</Text>
+          <Text style={[styles.appTitle, { color: theme.text }]}>Unmute</Text>
+          <View style={styles.locationRow}>
+            <IconSymbol 
+              ios_icon_name="location.fill" 
+              android_material_icon_name="location_on" 
+              size={14} 
+              color={theme.textSecondary} 
+            />
+            <Text style={[styles.location, { color: theme.textSecondary }]}>Munich</Text>
+          </View>
         </View>
         <TouchableOpacity 
-          onPress={() => router.push('/(tabs)/settings')}
-          style={styles.settingsButton}
+          onPress={() => {
+            hapticFeedback.light();
+            router.push('/(tabs)/settings');
+          }}
+          style={[styles.settingsButton, { backgroundColor: theme.card }, shadows.sm]}
         >
           <IconSymbol 
             ios_icon_name="gearshape.fill" 
             android_material_icon_name="settings" 
             size={24} 
-            color={colors.text} 
+            color={theme.text} 
           />
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
         <View style={styles.statusContainer}>
-          <Text style={styles.statusTitle}>
+          <Text style={[styles.statusTitle, { color: isOpen ? theme.primary : theme.text }]}>
             {isOpen ? "You're open to connect" : "Ready to connect?"}
           </Text>
-          <Text style={styles.statusDescription}>
+          <Text style={[styles.statusDescription, { color: theme.textSecondary }]}>
             {isOpen 
               ? "We're looking for people here with shared interests" 
               : "Tap Open to be visible to people here who share your interests"}
@@ -143,6 +170,7 @@ export default function HomeScreen() {
                 style={[
                   styles.glowOuter,
                   {
+                    backgroundColor: theme.primary,
                     opacity: glowAnim.interpolate({
                       inputRange: [0, 1],
                       outputRange: [0.2, 0.4],
@@ -157,10 +185,27 @@ export default function HomeScreen() {
                 ]}
               />
             )}
+            
+            {/* Progress ring around the circle */}
+            {isOpen && (
+              <View style={styles.progressRingContainer}>
+                <ProgressRing
+                  size={240}
+                  strokeWidth={6}
+                  progress={progress}
+                  color={theme.primary}
+                  backgroundColor={theme.border}
+                />
+              </View>
+            )}
+
             <Animated.View 
               style={[
                 styles.circle, 
-                isOpen && styles.circleOpen,
+                { 
+                  backgroundColor: isOpen ? theme.primary : theme.disabled,
+                  ...shadows.xl,
+                },
                 { transform: [{ scale: scaleAnim }] }
               ]}
             >
@@ -169,31 +214,39 @@ export default function HomeScreen() {
                 onPress={handleToggle}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.circleText, isOpen && styles.circleTextOpen]}>
+                <Text style={[styles.circleText, { color: isOpen ? theme.card : theme.textSecondary }]}>
                   {isOpen ? 'Open' : 'Closed'}
                 </Text>
+                {isOpen && (
+                  <Text style={[styles.timerText, { color: theme.card }]}>
+                    {formatTime(remainingTime)}
+                  </Text>
+                )}
               </TouchableOpacity>
             </Animated.View>
           </View>
 
           {!isOpen && (
-            <Text style={styles.visibilityText}>
+            <Text style={[styles.visibilityText, { color: theme.textSecondary }]}>
               You are not visible to others
             </Text>
           )}
 
           {isOpen && (
             <View style={styles.sessionInfo}>
-              <Text style={styles.sessionTimer}>
-                Session auto-closes in {formatTime(remainingTime)} (ends at {formatEndTime(remainingTime)})
+              <Text style={[styles.sessionTimer, { color: theme.textSecondary }]}>
+                Session ends at {formatEndTime(remainingTime)}
               </Text>
               <View style={styles.sessionActions}>
-                <TouchableOpacity onPress={closeSession}>
-                  <Text style={buttonStyles.link}>Close now</Text>
+                <TouchableOpacity onPress={() => {
+                  hapticFeedback.light();
+                  closeSession();
+                }}>
+                  <Text style={[styles.link, { color: theme.text }]}>Close now</Text>
                 </TouchableOpacity>
-                <Text style={styles.separator}>•</Text>
+                <Text style={[styles.separator, { color: theme.textSecondary }]}>•</Text>
                 <TouchableOpacity onPress={handleExtend}>
-                  <Text style={buttonStyles.linkPrimary}>Extend +30 min</Text>
+                  <Text style={[styles.linkPrimary, { color: theme.primary }]}>Extend +30 min</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -202,12 +255,12 @@ export default function HomeScreen() {
 
         {user && user.interests.length > 0 && (
           <View style={styles.interestsSection}>
-            <Text style={styles.interestsTitle}>Your interests:</Text>
+            <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={index} style={styles.interestChip}>
+                <View key={index} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
-                  <Text style={styles.interestText}>{interest}</Text>
+                  <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
                 </View>
               ))}
             </View>
@@ -220,79 +273,72 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? spacing.massive : 60,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 24,
-    marginBottom: 40,
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.huge,
   },
   appTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.title,
+    marginBottom: spacing.xs,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   location: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 2,
+    ...typography.caption,
   },
   settingsButton: {
-    padding: 8,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    boxShadow: `0px 2px 4px ${colors.shadow}`,
-    elevation: 2,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xxl,
   },
   statusContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.huge,
   },
   statusTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.primary,
+    ...typography.subtitle,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   statusDescription: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    ...typography.body,
     textAlign: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 40,
-    lineHeight: 22,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.huge,
   },
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
+    position: 'relative',
   },
   glowOuter: {
     position: 'absolute',
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: colors.primary,
+  },
+  progressRingContainer: {
+    position: 'absolute',
   },
   circle: {
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: colors.disabled,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0px 8px 24px ${colors.shadow}`,
-    elevation: 8,
-  },
-  circleOpen: {
-    backgroundColor: colors.primary,
   },
   circleButton: {
     width: '100%',
@@ -301,68 +347,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circleText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: colors.textSecondary,
+    ...typography.title,
+    marginBottom: spacing.xs,
   },
-  circleTextOpen: {
-    color: colors.card,
+  timerText: {
+    ...typography.heading,
+    fontWeight: '500',
   },
   visibilityText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
     textAlign: 'center',
   },
   sessionInfo: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   sessionTimer: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   sessionActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   separator: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
+  },
+  link: {
+    ...typography.caption,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  linkPrimary: {
+    ...typography.caption,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   interestsSection: {
     width: '100%',
   },
   interestsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
+    ...typography.bodyBold,
+    marginBottom: spacing.md,
   },
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
   interestChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.card,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   interestEmoji: {
     fontSize: 16,
   },
   interestText: {
-    fontSize: 14,
-    color: colors.text,
+    ...typography.caption,
     fontWeight: '500',
   },
 });

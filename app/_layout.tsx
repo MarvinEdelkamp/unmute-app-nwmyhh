@@ -11,11 +11,12 @@ import {
   DarkTheme,
   DefaultTheme,
   Theme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SessionProvider } from "@/contexts/SessionContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,12 +46,19 @@ function RootNavigator() {
       <Stack.Screen name="onboarding/welcome" />
       <Stack.Screen name="onboarding/how-it-works" />
       <Stack.Screen name="onboarding/safety" />
+      <Stack.Screen name="onboarding/location" />
       <Stack.Screen name="auth/signup" />
       <Stack.Screen name="auth/signin" />
       <Stack.Screen name="auth/interests" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen 
         name="match/pending" 
+        options={{
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen 
+        name="match/confirm" 
         options={{
           presentation: 'modal',
         }}
@@ -85,42 +93,44 @@ export default function RootLayout() {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "rgb(100, 181, 246)",
-      background: "rgb(245, 245, 245)",
-      card: "rgb(255, 255, 255)",
-      text: "rgb(33, 33, 33)",
-      border: "rgb(224, 224, 224)",
-      notification: "rgb(239, 83, 80)",
+      primary: "#4A9B94",
+      background: "#FFFFFF",
+      card: "#FFFFFF",
+      text: "#1A1A1A",
+      border: "#E5E7EB",
+      notification: "#E74C3C",
     },
   };
 
   const CustomDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
-      primary: "rgb(100, 181, 246)",
-      background: "rgb(18, 18, 18)",
-      card: "rgb(28, 28, 30)",
-      text: "rgb(255, 255, 255)",
-      border: "rgb(44, 44, 46)",
-      notification: "rgb(239, 83, 80)",
+      primary: "#5FBDB5",
+      background: "#121212",
+      card: "#1E1E1E",
+      text: "#FFFFFF",
+      border: "#2C2C2C",
+      notification: "#FF6B6B",
     },
   };
 
   return (
     <>
       <StatusBar style="auto" animated />
-      <ThemeProvider
+      <NavigationThemeProvider
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
       >
-        <AuthProvider>
-          <SessionProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <RootNavigator />
-              <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </SessionProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SessionProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <RootNavigator />
+                <SystemBars style={"auto"} />
+              </GestureHandlerRootView>
+            </SessionProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </NavigationThemeProvider>
     </>
   );
 }

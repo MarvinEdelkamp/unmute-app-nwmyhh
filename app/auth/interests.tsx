@@ -1,32 +1,40 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { interestCategories } from '@/data/interests';
 import { IconSymbol } from '@/components/IconSymbol';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
+import { hapticFeedback } from '@/utils/haptics';
 
 export default function InterestsScreen() {
   const { updateUser, completeOnboarding } = useAuth();
+  const { theme } = useTheme();
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
   const [loading, setLoading] = useState(false);
 
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
+      hapticFeedback.light();
       setSelectedInterests(selectedInterests.filter(i => i !== interest));
     } else {
       if (selectedInterests.length >= 5) {
+        hapticFeedback.warning();
         Alert.alert('Maximum reached', 'You can select up to 5 interests');
         return;
       }
+      hapticFeedback.selection();
       setSelectedInterests([...selectedInterests, interest]);
     }
   };
 
   const removeInterest = (interest: string) => {
+    hapticFeedback.light();
     setSelectedInterests(selectedInterests.filter(i => i !== interest));
   };
 
@@ -37,31 +45,38 @@ export default function InterestsScreen() {
     }
 
     if (selectedInterests.includes(trimmed)) {
+      hapticFeedback.warning();
       Alert.alert('Already added', 'This interest is already in your list');
       return;
     }
 
     if (selectedInterests.length >= 5) {
+      hapticFeedback.warning();
       Alert.alert('Maximum reached', 'You can select up to 5 interests');
       return;
     }
 
+    hapticFeedback.success();
     setSelectedInterests([...selectedInterests, trimmed]);
     setCustomInterest('');
   };
 
   const handleContinue = async () => {
     if (selectedInterests.length < 3) {
+      hapticFeedback.warning();
       Alert.alert('Select more interests', 'Please select at least 3 interests');
       return;
     }
 
     try {
       setLoading(true);
+      hapticFeedback.medium();
       await updateUser({ interests: selectedInterests });
       await completeOnboarding();
+      hapticFeedback.success();
       router.replace('/(tabs)/(home)/');
     } catch (error) {
+      hapticFeedback.error();
       Alert.alert('Error', 'Failed to save interests. Please try again.');
       console.log('Save interests error:', error);
     } finally {
@@ -92,40 +107,44 @@ export default function InterestsScreen() {
     return emojiMap[interest] || '✨';
   };
 
+  const progress = selectedInterests.length / 5;
+
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[commonStyles.title, styles.title]}>What are you into?</Text>
-        <Text style={[commonStyles.textSecondary, styles.subtitle]}>
+        <Text style={[styles.title, { color: theme.text }]}>What are you into?</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           Choose 3–5 interests to find your people
         </Text>
 
         <View style={styles.progressContainer}>
-          <View style={styles.progressDots}>
-            {[0, 1, 2, 3, 4].map((index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressDot,
-                  index < selectedInterests.length && styles.progressDotActive,
-                ]}
-              />
-            ))}
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { 
+                  backgroundColor: theme.primary,
+                  width: `${progress * 100}%`,
+                }
+              ]} 
+            />
           </View>
-          <Text style={styles.progressText}>{selectedInterests.length}/5 selected</Text>
+          <Text style={[styles.progressText, { color: theme.textSecondary }]}>
+            {selectedInterests.length}/5 selected
+          </Text>
         </View>
 
         {selectedInterests.length > 0 && (
           <View style={styles.selectedSection}>
-            <Text style={styles.sectionTitle}>Your interests:</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.selectedGrid}>
               {selectedInterests.map((interest, index) => (
-                <View key={index} style={styles.selectedChip}>
+                <View key={index} style={[styles.selectedChip, { backgroundColor: theme.primary }, shadows.sm]}>
                   <Text style={styles.selectedEmoji}>{getInterestEmoji(interest)}</Text>
-                  <Text style={styles.selectedText}>{interest}</Text>
+                  <Text style={[styles.selectedText, { color: theme.card }]}>{interest}</Text>
                   <TouchableOpacity
                     onPress={() => removeInterest(interest)}
                     style={styles.removeButton}
@@ -134,7 +153,7 @@ export default function InterestsScreen() {
                       ios_icon_name="xmark"
                       android_material_icon_name="close"
                       size={14}
-                      color={colors.card}
+                      color={theme.card}
                     />
                   </TouchableOpacity>
                 </View>
@@ -145,17 +164,9 @@ export default function InterestsScreen() {
 
         {interestCategories.map((category, categoryIndex) => (
           <View key={categoryIndex} style={styles.category}>
-            <TouchableOpacity
-              style={styles.categoryButton}
-              onPress={() => {
-                const firstInterest = category.interests[0];
-                if (firstInterest && !selectedInterests.includes(firstInterest)) {
-                  toggleInterest(firstInterest);
-                }
-              }}
-            >
-              <Text style={styles.categoryTitle}>{category.name}</Text>
-            </TouchableOpacity>
+            <View style={[styles.categoryHeader, { backgroundColor: theme.primary }, shadows.sm]}>
+              <Text style={[styles.categoryTitle, { color: theme.card }]}>{category.name}</Text>
+            </View>
 
             <View style={styles.interestsGrid}>
               {category.interests.map((interest, interestIndex) => {
@@ -165,15 +176,20 @@ export default function InterestsScreen() {
                     key={interestIndex}
                     style={[
                       styles.interestCard,
-                      isSelected && styles.interestCardSelected,
+                      { 
+                        backgroundColor: isSelected ? theme.primary : theme.card,
+                        borderColor: isSelected ? theme.primary : theme.border,
+                      },
+                      shadows.sm,
                     ]}
                     onPress={() => toggleInterest(interest)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                     <Text
                       style={[
                         styles.interestText,
-                        isSelected && styles.interestTextSelected,
+                        { color: isSelected ? theme.card : theme.text },
                       ]}
                     >
                       {interest}
@@ -186,52 +202,69 @@ export default function InterestsScreen() {
         ))}
 
         <View style={styles.customSection}>
-          <Text style={styles.customTitle}>Can&apos;t find what you&apos;re looking for?</Text>
+          <Text style={[styles.customTitle, { color: theme.text }]}>
+            Can&apos;t find what you&apos;re looking for?
+          </Text>
           <View style={styles.customInputContainer}>
             <TextInput
-              style={[commonStyles.input, styles.customInput]}
-              placeholder="e.g. 'sourdough bread', 'looking for a..."
-              placeholderTextColor={colors.textSecondary}
+              style={[
+                styles.customInput,
+                { 
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                  color: theme.text,
+                }
+              ]}
+              placeholder="e.g. 'sourdough bread'"
+              placeholderTextColor={theme.textSecondary}
               value={customInterest}
               onChangeText={setCustomInterest}
               onSubmitEditing={addCustomInterest}
               returnKeyType="done"
             />
             <TouchableOpacity
-              style={styles.addIconButton}
+              style={[
+                styles.addIconButton,
+                { backgroundColor: theme.card, borderColor: theme.border },
+                shadows.sm,
+              ]}
               onPress={addCustomInterest}
             >
               <IconSymbol
                 ios_icon_name="plus"
                 android_material_icon_name="add"
                 size={24}
-                color={colors.textSecondary}
+                color={theme.primary}
               />
             </TouchableOpacity>
           </View>
-          <Text style={styles.customHint}>
-            We&apos;ll match you with people who share similar interests, even if worded differently
+          <Text style={[styles.customHint, { color: theme.textSecondary }]}>
+            We&apos;ll match you with people who share similar interests
           </Text>
         </View>
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
         <TouchableOpacity 
           style={[
-            buttonStyles.primary,
             styles.button,
+            { backgroundColor: theme.primary },
             selectedInterests.length < 3 && styles.buttonDisabled,
+            shadows.md,
           ]}
           onPress={handleContinue}
           disabled={selectedInterests.length < 3 || loading}
+          activeOpacity={0.8}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>
-            {selectedInterests.length < 3 
-              ? 'Select at least 3 interests' 
-              : loading 
-              ? 'Saving...' 
-              : 'Continue'}
-          </Text>
+          {loading ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            <Text style={[styles.buttonText, { color: theme.card }]}>
+              {selectedInterests.length < 3 
+                ? `Select ${3 - selectedInterests.length} more` 
+                : 'Continue'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -240,73 +273,64 @@ export default function InterestsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? spacing.massive : 60,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xxl,
     paddingBottom: 120,
   },
   title: {
-    fontSize: 24,
-    textAlign: 'left',
-    marginBottom: 8,
+    ...typography.title,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    textAlign: 'left',
-    marginBottom: 20,
-    fontSize: 16,
+    ...typography.body,
+    marginBottom: spacing.xl,
   },
   progressContainer: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
-  progressDots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+  progressBar: {
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: borderRadius.round,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
   },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.disabled,
-  },
-  progressDotActive: {
-    backgroundColor: colors.primary,
+  progressFill: {
+    height: '100%',
+    borderRadius: borderRadius.round,
   },
   progressText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
   },
   selectedSection: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
+    ...typography.bodyBold,
+    marginBottom: spacing.md,
   },
   selectedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   selectedChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingVertical: 10,
-    paddingLeft: 12,
-    paddingRight: 10,
-    borderRadius: 24,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    borderRadius: borderRadius.xxl,
   },
   selectedEmoji: {
     fontSize: 16,
   },
   selectedText: {
-    fontSize: 14,
-    color: colors.card,
+    ...typography.caption,
     fontWeight: '500',
   },
   removeButton: {
@@ -316,100 +340,94 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 2,
+    marginLeft: spacing.xs,
   },
   category: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
-  categoryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+  categoryHeader: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.xxl,
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.card,
+    ...typography.bodyBold,
   },
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.md,
   },
   interestCard: {
-    backgroundColor: colors.card,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     minWidth: 100,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  interestCardSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderWidth: 1.5,
   },
   interestEmoji: {
     fontSize: 32,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   interestText: {
-    fontSize: 14,
-    color: colors.text,
+    ...typography.caption,
     fontWeight: '500',
   },
-  interestTextSelected: {
-    color: colors.card,
-  },
   customSection: {
-    marginTop: 12,
-    marginBottom: 24,
+    marginTop: spacing.md,
+    marginBottom: spacing.xxl,
   },
   customTitle: {
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: 12,
+    ...typography.body,
+    marginBottom: spacing.md,
   },
   customInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   customInput: {
     flex: 1,
+    borderWidth: 1.5,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    ...typography.body,
   },
   addIconButton: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.card,
+    borderRadius: borderRadius.round,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
   },
   customHint: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
+    ...typography.small,
   },
   buttonContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    backgroundColor: colors.background,
+    padding: spacing.xxl,
+    borderTopWidth: 1,
   },
   button: {
     width: '100%',
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    ...typography.bodyBold,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 });
