@@ -1,11 +1,15 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { validation, sanitize } from '@/utils/validation';
+import { errorHandler } from '@/utils/errorHandler';
+import { hapticFeedback } from '@/utils/haptics';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function SignUpScreen() {
@@ -14,6 +18,7 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
 
   const handlePickImage = async () => {
     try {
@@ -26,34 +31,67 @@ export default function SignUpScreen() {
 
       if (!result.canceled && result.assets[0]) {
         setAvatar(result.assets[0].uri);
+        hapticFeedback.success();
       }
     } catch (error) {
-      console.log('Image picker error:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      errorHandler.logError(error as Error, 'IMAGE_PICKER');
+      errorHandler.showError('Failed to pick image. Please try again.');
+      console.error('Image picker error:', error);
     }
   };
 
-  const handleContinue = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
+  const validateForm = (): boolean => {
+    const newErrors: { name?: string; email?: string } = {};
+
+    const nameValidation = validation.name(name);
+    if (!nameValidation.valid) {
+      newErrors.name = nameValidation.error;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
+    const emailValidation = validation.email(email);
+    if (!emailValidation.valid) {
+      newErrors.email = emailValidation.error;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleContinue = async () => {
+    if (!validateForm()) {
+      hapticFeedback.warning();
       return;
     }
 
     try {
       setLoading(true);
+      hapticFeedback.medium();
+      
       await signUp(email, 'password123', name);
-      // Navigate to interests screen - DO NOT let the layout redirect us
+      
+      hapticFeedback.success();
       router.replace('/auth/interests');
     } catch (error) {
-      Alert.alert('Error', 'Failed to create profile. Please try again.');
-      console.log('Sign up error:', error);
+      hapticFeedback.error();
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create profile';
+      errorHandler.showError(errorMessage);
+      console.error('Sign up error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNameChange = (text: string) => {
+    setName(text);
+    if (errors.name) {
+      setErrors({ ...errors, name: undefined });
+    }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (errors.email) {
+      setErrors({ ...errors, email: undefined });
     }
   };
 
@@ -98,41 +136,50 @@ export default function SignUpScreen() {
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>First name or nickname</Text>
-            <View style={styles.inputWrapper}>
+            <View style={[
+              styles.inputWrapper,
+              errors.name && styles.inputWrapperError
+            ]}>
               <IconSymbol 
                 ios_icon_name="person.fill" 
                 android_material_icon_name="person" 
                 size={20} 
-                color={colors.textSecondary} 
+                color={errors.name ? colors.error : colors.textSecondary} 
               />
               <TextInput
                 style={styles.input}
                 placeholder="e.g. Sophie"
                 placeholderTextColor={colors.textSecondary}
                 value={name}
-                onChangeText={setName}
+                onChangeText={handleNameChange}
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="next"
               />
             </View>
+            {errors.name && (
+              <Text style={styles.errorText}>{errors.name}</Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email address</Text>
-            <View style={styles.inputWrapper}>
+            <View style={[
+              styles.inputWrapper,
+              errors.email && styles.inputWrapperError
+            ]}>
               <IconSymbol 
                 ios_icon_name="envelope.fill" 
                 android_material_icon_name="email" 
                 size={20} 
-                color={colors.textSecondary} 
+                color={errors.email ? colors.error : colors.textSecondary} 
               />
               <TextInput
                 style={styles.input}
                 placeholder="your@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={handleEmailChange}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
@@ -140,9 +187,14 @@ export default function SignUpScreen() {
                 onSubmitEditing={handleContinue}
               />
             </View>
-            <Text style={styles.inputNote}>
-              For account recovery only. Never shown to others
-            </Text>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+            {!errors.email && (
+              <Text style={styles.inputNote}>
+                For account recovery only. Never shown to others
+              </Text>
+            )}
           </View>
 
           <View style={styles.infoBox}>
@@ -163,12 +215,16 @@ export default function SignUpScreen() {
           disabled={!isFormValid || loading}
           activeOpacity={0.8}
         >
-          <Text style={[
-            styles.buttonText,
-            isFormValid ? styles.buttonTextActive : styles.buttonTextDisabled
-          ]}>
-            {loading ? 'Creating...' : 'Continue'}
-          </Text>
+          {loading ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            <Text style={[
+              styles.buttonText,
+              isFormValid ? styles.buttonTextActive : styles.buttonTextDisabled
+            ]}>
+              Continue
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -245,6 +301,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + spacing.xs,
   },
+  inputWrapperError: {
+    borderColor: colors.error,
+    backgroundColor: colors.errorLight,
+  },
   input: {
     flex: 1,
     fontSize: 16,
@@ -255,6 +315,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.error,
     lineHeight: 20,
   },
   infoBox: {

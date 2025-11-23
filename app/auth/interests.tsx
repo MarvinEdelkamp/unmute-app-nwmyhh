@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { hapticFeedback } from '@/utils/haptics';
+import { validation, sanitize } from '@/utils/validation';
+import { errorHandler } from '@/utils/errorHandler';
 
 export default function InterestsScreen() {
   const { updateUser, completeOnboarding } = useAuth();
@@ -24,9 +26,9 @@ export default function InterestsScreen() {
       hapticFeedback.light();
       setSelectedInterests(selectedInterests.filter(i => i !== interest));
     } else {
-      if (selectedInterests.length >= 5) {
+      if (selectedInterests.length >= 7) {
         hapticFeedback.warning();
-        Alert.alert('Maximum reached', 'You can select up to 5 interests');
+        errorHandler.showError('You can select up to 7 interests', 'Maximum Reached');
         return;
       }
       hapticFeedback.selection();
@@ -40,20 +42,24 @@ export default function InterestsScreen() {
   };
 
   const addCustomInterest = () => {
-    const trimmed = customInterest.trim();
-    if (!trimmed) {
+    const trimmed = sanitize.text(customInterest);
+    
+    const customValidation = validation.customInterest(trimmed);
+    if (!customValidation.valid) {
+      hapticFeedback.warning();
+      errorHandler.showValidationError(customValidation.error || 'Invalid interest');
       return;
     }
 
     if (selectedInterests.includes(trimmed)) {
       hapticFeedback.warning();
-      Alert.alert('Already added', 'This interest is already in your list');
+      errorHandler.showError('This interest is already in your list', 'Already Added');
       return;
     }
 
-    if (selectedInterests.length >= 5) {
+    if (selectedInterests.length >= 7) {
       hapticFeedback.warning();
-      Alert.alert('Maximum reached', 'You can select up to 5 interests');
+      errorHandler.showError('You can select up to 7 interests', 'Maximum Reached');
       return;
     }
 
@@ -63,23 +69,27 @@ export default function InterestsScreen() {
   };
 
   const handleContinue = async () => {
-    if (selectedInterests.length < 3) {
+    const interestsValidation = validation.interests(selectedInterests);
+    if (!interestsValidation.valid) {
       hapticFeedback.warning();
-      Alert.alert('Select more interests', 'Please select at least 3 interests');
+      errorHandler.showValidationError(interestsValidation.error || 'Please select at least 3 interests');
       return;
     }
 
     try {
       setLoading(true);
       hapticFeedback.medium();
+      
       await updateUser({ interests: selectedInterests });
       await completeOnboarding();
+      
       hapticFeedback.success();
       router.replace('/(tabs)/(home)/');
     } catch (error) {
       hapticFeedback.error();
-      Alert.alert('Error', 'Failed to save interests. Please try again.');
-      console.log('Save interests error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save interests';
+      errorHandler.showError(errorMessage);
+      console.error('Save interests error:', error);
     } finally {
       setLoading(false);
     }
@@ -179,7 +189,7 @@ export default function InterestsScreen() {
     return emojiMap[interest] || '✨';
   };
 
-  const progress = selectedInterests.length / 5;
+  const progress = Math.min(selectedInterests.length / 5, 1);
 
   return (
     <KeyboardAvoidingView 
@@ -195,7 +205,7 @@ export default function InterestsScreen() {
       >
         <Text style={[styles.title, { color: theme.text }]}>What are you into?</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Choose 3–5 interests to find your people
+          Choose 3–7 interests to find your people
         </Text>
 
         <View style={styles.progressContainer}>
@@ -211,7 +221,7 @@ export default function InterestsScreen() {
             />
           </View>
           <Text style={[styles.progressText, { color: theme.textSecondary }]}>
-            {selectedInterests.length}/5 selected
+            {selectedInterests.length}/7 selected (min 3)
           </Text>
         </View>
 
@@ -301,12 +311,13 @@ export default function InterestsScreen() {
                   color: theme.text,
                 }
               ]}
-              placeholder="e.g. 'sourdough bread', 'looking for a..."
+              placeholder="e.g. 'sourdough bread'"
               placeholderTextColor={theme.textSecondary}
               value={customInterest}
               onChangeText={setCustomInterest}
               onSubmitEditing={addCustomInterest}
               returnKeyType="done"
+              maxLength={30}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -330,7 +341,7 @@ export default function InterestsScreen() {
             </TouchableOpacity>
           </View>
           <Text style={[styles.customHint, { color: theme.textSecondary }]}>
-            We&apos;ll match you with people who share similar interests, even if worded differently
+            We&apos;ll match you with people who share similar interests
           </Text>
         </View>
       </ScrollView>

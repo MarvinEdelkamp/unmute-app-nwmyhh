@@ -1,9 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { Session, Match, User } from '@/types';
+import { Session, Match } from '@/types';
 import { useAuth } from './AuthContext';
+import { storage } from '@/utils/storage';
+import { errorHandler } from '@/utils/errorHandler';
 
 interface SessionContextType {
   session: Session | null;
@@ -27,12 +28,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [remainingTime, setRemainingTime] = useState(0);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const matchCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const timerInterval = useRef<NodeJS.Timeout | null>(null);
 
   const isOpen = session?.status === 'open';
 
   useEffect(() => {
     loadSession();
     loadMatches();
+
+    return () => {
+      cleanup();
+    };
   }, []);
 
   useEffect(() => {
@@ -43,46 +49,58 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } else {
       stopLocationTracking();
       stopMatchChecking();
+      stopTimer();
     }
 
     return () => {
-      stopLocationTracking();
-      stopMatchChecking();
+      cleanup();
     };
   }, [isOpen, session]);
 
+  const cleanup = () => {
+    stopLocationTracking();
+    stopMatchChecking();
+    stopTimer();
+  };
+
   const loadSession = async () => {
     try {
-      const sessionData = await AsyncStorage.getItem('session');
+      const sessionData = await storage.getItem<Session>('session');
       if (sessionData) {
-        const parsedSession = JSON.parse(sessionData);
         const now = new Date();
-        const expiresAt = new Date(parsedSession.expiresAt);
+        const expiresAt = new Date(sessionData.expiresAt);
         
-        if (now < expiresAt && parsedSession.status === 'open') {
-          setSession(parsedSession);
+        if (now < expiresAt && sessionData.status === 'open') {
+          setSession(sessionData);
+          console.log('Session loaded successfully:', sessionData.id);
         } else {
-          await AsyncStorage.removeItem('session');
+          await storage.removeItem('session');
+          console.log('Expired session removed');
         }
       }
     } catch (error) {
-      console.log('Error loading session:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOAD');
+      console.error('Error loading session:', error);
     }
   };
 
   const loadMatches = async () => {
     try {
-      const matchesData = await AsyncStorage.getItem('matches');
-      if (matchesData) {
-        setMatches(JSON.parse(matchesData));
+      const matchesData = await storage.getItem<Match[]>('matches');
+      if (matchesData && Array.isArray(matchesData)) {
+        setMatches(matchesData);
+        console.log('Matches loaded successfully:', matchesData.length);
       }
     } catch (error) {
-      console.log('Error loading matches:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOAD_MATCHES');
+      console.error('Error loading matches:', error);
     }
   };
 
   const startTimer = () => {
-    const interval = setInterval(() => {
+    stopTimer();
+    
+    timerInterval.current = setInterval(() => {
       if (session) {
         const now = new Date();
         const expiresAt = new Date(session.expiresAt);
@@ -91,19 +109,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setRemainingTime(remaining);
         
         if (remaining === 0) {
+          console.log('Session expired, closing automatically');
           closeSession();
         }
       }
     }, 1000);
+  };
 
-    return () => clearInterval(interval);
+  const stopTimer = () => {
+    if (timerInterval.current) {
+      clearInterval(timerInterval.current);
+      timerInterval.current = null;
+    }
   };
 
   const startLocationTracking = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('Location permission denied');
+        console.warn('Location permission denied');
+        errorHandler.showError(
+          'Location access is required to find people nearby. Please enable it in settings.',
+          'Location Required'
+        );
         return;
       }
 
@@ -117,8 +145,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           updateLocation(location.coords.latitude, location.coords.longitude);
         }
       );
+
+      console.log('Location tracking started');
     } catch (error) {
-      console.log('Error starting location tracking:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOCATION_START');
+      console.error('Error starting location tracking:', error);
     }
   };
 
@@ -126,52 +157,69 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (locationSubscription.current) {
       locationSubscription.current.remove();
       locationSubscription.current = null;
+      console.log('Location tracking stopped');
     }
   };
 
   const updateLocation = async (latitude: number, longitude: number) => {
-    if (session) {
-      const updatedSession = { ...session, latitude, longitude };
-      setSession(updatedSession);
-      await AsyncStorage.setItem('session', JSON.stringify(updatedSession));
+    try {
+      if (session) {
+        const updatedSession = { ...session, latitude, longitude };
+        setSession(updatedSession);
+        await storage.setItem('session', updatedSession);
+      }
+    } catch (error) {
+      errorHandler.logError(error as Error, 'SESSION_UPDATE_LOCATION');
+      console.error('Error updating location:', error);
     }
   };
 
   const startMatchChecking = () => {
+    stopMatchChecking();
+    
     matchCheckInterval.current = setInterval(() => {
       checkForMatches();
     }, 45000);
+
+    console.log('Match checking started');
   };
 
   const stopMatchChecking = () => {
     if (matchCheckInterval.current) {
       clearInterval(matchCheckInterval.current);
       matchCheckInterval.current = null;
+      console.log('Match checking stopped');
     }
   };
 
   const checkForMatches = async () => {
-    if (Math.random() > 0.9 && user) {
-      const mockMatch: Match = {
-        id: Date.now().toString(),
-        sessionAId: session?.id || '',
-        sessionBId: 'mock-session-b',
-        userA: user,
-        userB: {
-          id: 'mock-user',
-          email: 'mock@example.com',
-          name: 'Sophie',
-          interests: user.interests.slice(0, 2),
+    try {
+      if (Math.random() > 0.9 && user) {
+        const mockMatch: Match = {
+          id: Date.now().toString(),
+          sessionAId: session?.id || '',
+          sessionBId: 'mock-session-b',
+          userA: user,
+          userB: {
+            id: 'mock-user',
+            email: 'mock@example.com',
+            name: 'Sophie',
+            interests: user.interests.slice(0, 2),
+            createdAt: new Date().toISOString(),
+          },
+          sharedInterests: user.interests.slice(0, 2),
+          status: 'pending',
           createdAt: new Date().toISOString(),
-        },
-        sharedInterests: user.interests.slice(0, 2),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
+        };
 
-      const updatedMatches = [...matches, mockMatch];
-      setMatches(updatedMatches);
-      await AsyncStorage.setItem('matches', JSON.stringify(updatedMatches));
+        const updatedMatches = [...matches, mockMatch];
+        setMatches(updatedMatches);
+        await storage.setItem('matches', updatedMatches);
+        console.log('New match created:', mockMatch.id);
+      }
+    } catch (error) {
+      errorHandler.logError(error as Error, 'SESSION_CHECK_MATCHES');
+      console.error('Error checking for matches:', error);
     }
   };
 
@@ -181,11 +229,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No user logged in');
       }
 
-      const settingsData = await AsyncStorage.getItem('settings');
-      const settings = settingsData ? JSON.parse(settingsData) : { defaultOpenTime: 45 };
+      const settingsData = await storage.getItem<{ defaultOpenTime: number }>('settings');
+      const defaultOpenTime = settingsData?.defaultOpenTime || 45;
       
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + settings.defaultOpenTime * 60000);
+      const expiresAt = new Date(now.getTime() + defaultOpenTime * 60000);
 
       const newSession: Session = {
         id: Date.now().toString(),
@@ -195,10 +243,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         status: 'open',
       };
 
-      await AsyncStorage.setItem('session', JSON.stringify(newSession));
+      const success = await storage.setItem('session', newSession);
+      if (!success) {
+        throw new Error('Failed to save session');
+      }
+
       setSession(newSession);
+      console.log('Session opened successfully:', newSession.id);
     } catch (error) {
-      console.log('Error opening session:', error);
+      errorHandler.logError(error as Error, 'SESSION_OPEN');
+      errorHandler.showError('Failed to open session. Please try again.');
       throw error;
     }
   };
@@ -206,15 +260,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const closeSession = async () => {
     try {
       if (session) {
-        const closedSession = { ...session, status: 'closed' as const };
-        await AsyncStorage.setItem('session', JSON.stringify(closedSession));
-        await AsyncStorage.removeItem('session');
+        await storage.removeItem('session');
         setSession(null);
         setRemainingTime(0);
+        console.log('Session closed successfully');
       }
     } catch (error) {
-      console.log('Error closing session:', error);
-      throw error;
+      errorHandler.logError(error as Error, 'SESSION_CLOSE');
+      console.error('Error closing session:', error);
     }
   };
 
@@ -225,11 +278,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const newExpiresAt = new Date(currentExpiresAt.getTime() + 30 * 60000);
         
         const extendedSession = { ...session, expiresAt: newExpiresAt.toISOString() };
-        await AsyncStorage.setItem('session', JSON.stringify(extendedSession));
+        const success = await storage.setItem('session', extendedSession);
+        
+        if (!success) {
+          throw new Error('Failed to extend session');
+        }
+
         setSession(extendedSession);
+        console.log('Session extended successfully');
       }
     } catch (error) {
-      console.log('Error extending session:', error);
+      errorHandler.logError(error as Error, 'SESSION_EXTEND');
+      errorHandler.showError('Failed to extend session. Please try again.');
       throw error;
     }
   };
@@ -238,7 +298,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       const matchIndex = matches.findIndex(m => m.id === matchId);
       if (matchIndex === -1) {
-        return;
+        throw new Error('Match not found');
       }
 
       const match = matches[matchIndex];
@@ -259,9 +319,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       updatedMatches[matchIndex] = updatedMatch;
 
       setMatches(updatedMatches);
-      await AsyncStorage.setItem('matches', JSON.stringify(updatedMatches));
+      const success = await storage.setItem('matches', updatedMatches);
+      
+      if (!success) {
+        throw new Error('Failed to save match response');
+      }
+
+      console.log('Match response saved:', matchId, newStatus);
     } catch (error) {
-      console.log('Error responding to match:', error);
+      errorHandler.logError(error as Error, 'SESSION_RESPOND_MATCH');
+      errorHandler.showError('Failed to respond to match. Please try again.');
       throw error;
     }
   };
@@ -270,7 +337,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       const matchIndex = matches.findIndex(m => m.id === matchId);
       if (matchIndex === -1) {
-        return;
+        throw new Error('Match not found');
       }
 
       const match = matches[matchIndex];
@@ -279,9 +346,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       updatedMatches[matchIndex] = updatedMatch;
 
       setMatches(updatedMatches);
-      await AsyncStorage.setItem('matches', JSON.stringify(updatedMatches));
+      const success = await storage.setItem('matches', updatedMatches);
+      
+      if (!success) {
+        throw new Error('Failed to confirm match');
+      }
+
+      console.log('Match confirmed:', matchId);
     } catch (error) {
-      console.log('Error confirming match:', error);
+      errorHandler.logError(error as Error, 'SESSION_CONFIRM_MATCH');
+      errorHandler.showError('Failed to confirm match. Please try again.');
       throw error;
     }
   };
@@ -290,10 +364,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedMatches = matches.filter(m => m.id !== matchId);
       setMatches(updatedMatches);
-      await AsyncStorage.setItem('matches', JSON.stringify(updatedMatches));
+      const success = await storage.setItem('matches', updatedMatches);
+      
+      if (!success) {
+        throw new Error('Failed to close match');
+      }
+
+      console.log('Match closed:', matchId);
     } catch (error) {
-      console.log('Error closing match:', error);
-      throw error;
+      errorHandler.logError(error as Error, 'SESSION_CLOSE_MATCH');
+      console.error('Error closing match:', error);
     }
   };
 

@@ -7,8 +7,13 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { WidgetProvider } from '@/contexts/WidgetContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Redirect } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { colors } from '@/styles/commonStyles';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { setupErrorLogging } from '@/utils/errorLogger';
+
+setupErrorLogging();
 
 function RootLayoutNav() {
   const { user, loading, hasCompletedOnboarding } = useAuth();
@@ -16,7 +21,7 @@ function RootLayoutNav() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LoadingSpinner message="Loading..." />
       </View>
     );
   }
@@ -29,7 +34,7 @@ function RootLayoutNav() {
     return <Redirect href="/auth/signup" />;
   }
 
-  if (user && !user.interests.length) {
+  if (user && (!user.interests || user.interests.length === 0)) {
     return <Redirect href="/auth/interests" />;
   }
 
@@ -49,16 +54,18 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <AuthProvider>
-          <SessionProvider>
-            <WidgetProvider>
-              <RootLayoutNav />
-            </WidgetProvider>
-          </SessionProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider>
+          <AuthProvider>
+            <SessionProvider>
+              <WidgetProvider>
+                <RootLayoutNav />
+              </WidgetProvider>
+            </SessionProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
