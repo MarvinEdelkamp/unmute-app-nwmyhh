@@ -177,9 +177,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg + spacing.xs,
     letterSpacing: -0.5,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    lineHeight: 36,
   },
   description: {
     fontSize: 17,
@@ -188,6 +189,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xxxl + spacing.lg,
     lineHeight: 26,
+    paddingHorizontal: spacing.sm,
   },
   featureContainer: {
     width: '100%',
@@ -237,7 +239,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
+    paddingHorizontal: spacing.xxxl,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',

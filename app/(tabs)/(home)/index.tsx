@@ -91,6 +91,7 @@ export default function HomeScreen() {
     
     hapticFeedback.medium();
     
+    // Create a realistic demo match
     const mockMatch: Match = {
       id: Date.now().toString(),
       sessionAId: 'demo-session-a',
@@ -98,8 +99,8 @@ export default function HomeScreen() {
       userA: user,
       userB: {
         id: 'demo-user',
-        email: 'demo@example.com',
-        name: 'Alex',
+        email: 'sophie@example.com',
+        name: 'Sophie',
         interests: user.interests.slice(0, 2),
         createdAt: new Date().toISOString(),
       },
@@ -114,7 +115,11 @@ export default function HomeScreen() {
       await storage.setItem('matches', updatedMatches);
       
       hapticFeedback.success();
-      router.push('/match/pending');
+      
+      // Navigate to pending match screen
+      setTimeout(() => {
+        router.push('/match/pending');
+      }, 100);
     } catch (error) {
       console.error('Error creating demo match:', error);
       hapticFeedback.error();

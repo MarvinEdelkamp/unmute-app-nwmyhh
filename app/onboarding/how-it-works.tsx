@@ -54,8 +54,10 @@ export default function HowItWorksScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>How it works</Text>
-          <Text style={styles.subtitle}>Three simple steps</Text>
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>How it works</Text>
+            <Text style={styles.subtitle}>Three simple steps</Text>
+          </View>
 
           <View style={styles.stepsContainer}>
             <View style={styles.step}>
@@ -163,26 +165,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingBottom: 180,
   },
+  headerSection: {
+    marginBottom: spacing.xxxl + spacing.xl,
+  },
   title: {
     fontSize: 32,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 17,
     fontWeight: '400',
     color: colors.textSecondary,
-    marginBottom: spacing.xxxl + spacing.lg,
   },
   stepsContainer: {
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxxl + spacing.lg,
   },
   step: {
     flexDirection: 'row',
-    gap: spacing.lg,
-    marginBottom: spacing.xxxl,
+    gap: spacing.lg + spacing.xs,
+    marginBottom: spacing.xxxl + spacing.md,
   },
   stepLeft: {
     alignItems: 'center',
@@ -210,7 +214,7 @@ const styles = StyleSheet.create({
     width: 3,
     flex: 1,
     backgroundColor: colors.border,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     borderRadius: 2,
   },
   stepContent: {
@@ -221,7 +225,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md + spacing.xs,
     letterSpacing: -0.3,
   },
   stepDescription: {
@@ -232,9 +236,9 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.lg,
     backgroundColor: colors.secondary,
-    padding: spacing.lg + spacing.xs,
+    padding: spacing.lg + spacing.md,
     borderRadius: borderRadius.lg,
     alignItems: 'flex-start',
     borderWidth: 1,
