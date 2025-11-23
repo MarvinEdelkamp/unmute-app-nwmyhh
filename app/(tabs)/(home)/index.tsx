@@ -363,15 +363,17 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {user && user.interests.length > 0 && (
+        {user && user.interests && user.interests.length > 0 && (
           <View style={styles.interestsSection}>
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={`interest-${index}`} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
-                  <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
-                  <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
-                </View>
+                <React.Fragment key={`interest-${interest}-${index}`}>
+                  <View style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
+                    <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
+                    <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
+                  </View>
+                </React.Fragment>
               ))}
             </View>
           </View>

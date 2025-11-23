@@ -150,9 +150,11 @@ export default function ReadyMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {readyMatch.sharedInterests.map((interest, index) => (
-                <View key={`interest-${index}`} style={styles.interestChip}>
-                  <Text style={styles.interestText}>{interest}</Text>
-                </View>
+                <React.Fragment key={`shared-interest-${interest}-${index}`}>
+                  <View style={styles.interestChip}>
+                    <Text style={styles.interestText}>{interest}</Text>
+                  </View>
+                </React.Fragment>
               ))}
             </View>
           </View>
@@ -181,21 +183,22 @@ export default function ReadyMatchScreen() {
             <Text style={styles.coordinationLabel}>Help them find you (optional)</Text>
             
             {PRESET_MESSAGES.map((message, index) => (
-              <TouchableOpacity
-                key={`preset-${index}`}
-                style={[
-                  styles.presetButton,
-                  selectedPreset === message && styles.presetButtonSelected
-                ]}
-                onPress={() => handlePresetPress(message)}
-              >
-                <Text style={[
-                  styles.presetText,
-                  selectedPreset === message && styles.presetTextSelected
-                ]}>
-                  {message}
-                </Text>
-              </TouchableOpacity>
+              <React.Fragment key={`preset-${message}-${index}`}>
+                <TouchableOpacity
+                  style={[
+                    styles.presetButton,
+                    selectedPreset === message && styles.presetButtonSelected
+                  ]}
+                  onPress={() => handlePresetPress(message)}
+                >
+                  <Text style={[
+                    styles.presetText,
+                    selectedPreset === message && styles.presetTextSelected
+                  ]}>
+                    {message}
+                  </Text>
+                </TouchableOpacity>
+              </React.Fragment>
             ))}
 
             <TextInput
