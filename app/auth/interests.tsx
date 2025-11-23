@@ -6,6 +6,7 @@ import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { interestCategories } from '@/data/interests';
+import { IconSymbol } from '@/components/IconSymbol';
 
 export default function InterestsScreen() {
   const { updateUser, completeOnboarding } = useAuth();
@@ -17,12 +18,16 @@ export default function InterestsScreen() {
     if (selectedInterests.includes(interest)) {
       setSelectedInterests(selectedInterests.filter(i => i !== interest));
     } else {
-      if (selectedInterests.length >= 7) {
-        Alert.alert('Maximum reached', 'You can select up to 7 interests');
+      if (selectedInterests.length >= 5) {
+        Alert.alert('Maximum reached', 'You can select up to 5 interests');
         return;
       }
       setSelectedInterests([...selectedInterests, interest]);
     }
+  };
+
+  const removeInterest = (interest: string) => {
+    setSelectedInterests(selectedInterests.filter(i => i !== interest));
   };
 
   const addCustomInterest = () => {
@@ -36,8 +41,8 @@ export default function InterestsScreen() {
       return;
     }
 
-    if (selectedInterests.length >= 7) {
-      Alert.alert('Maximum reached', 'You can select up to 7 interests');
+    if (selectedInterests.length >= 5) {
+      Alert.alert('Maximum reached', 'You can select up to 5 interests');
       return;
     }
 
@@ -64,26 +69,94 @@ export default function InterestsScreen() {
     }
   };
 
+  const getInterestEmoji = (interest: string) => {
+    const emojiMap: { [key: string]: string } = {
+      'Hiking': '🥾',
+      'Running': '🏃',
+      'Yoga': '🧘',
+      'Cycling': '🚴',
+      'Bouldering': '🧗',
+      'Photography': '📷',
+      'Coffee': '☕',
+      'Music': '🎵',
+      'Art': '🎨',
+      'Reading': '📚',
+      'Cooking': '🍳',
+      'Gaming': '🎮',
+      'Travel': '✈️',
+      'Fitness': '💪',
+      'Dancing': '💃',
+      'Movies': '🎬',
+      'Food': '🍕',
+    };
+    return emojiMap[interest] || '✨';
+  };
+
   return (
     <View style={[commonStyles.container, styles.container]}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[commonStyles.title, styles.title]}>Choose your interests</Text>
+        <Text style={[commonStyles.title, styles.title]}>What are you into?</Text>
         <Text style={[commonStyles.textSecondary, styles.subtitle]}>
-          Select 3-7 things you&apos;re passionate about
+          Choose 3–5 interests to find your people
         </Text>
 
-        <View style={styles.counter}>
-          <Text style={styles.counterText}>
-            {selectedInterests.length} / 7 selected
-          </Text>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressDots}>
+            {[0, 1, 2, 3, 4].map((index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  index < selectedInterests.length && styles.progressDotActive,
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={styles.progressText}>{selectedInterests.length}/5 selected</Text>
         </View>
+
+        {selectedInterests.length > 0 && (
+          <View style={styles.selectedSection}>
+            <Text style={styles.sectionTitle}>Your interests:</Text>
+            <View style={styles.selectedGrid}>
+              {selectedInterests.map((interest, index) => (
+                <View key={index} style={styles.selectedChip}>
+                  <Text style={styles.selectedEmoji}>{getInterestEmoji(interest)}</Text>
+                  <Text style={styles.selectedText}>{interest}</Text>
+                  <TouchableOpacity
+                    onPress={() => removeInterest(interest)}
+                    style={styles.removeButton}
+                  >
+                    <IconSymbol
+                      ios_icon_name="xmark"
+                      android_material_icon_name="close"
+                      size={14}
+                      color={colors.card}
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {interestCategories.map((category, categoryIndex) => (
           <View key={categoryIndex} style={styles.category}>
-            <Text style={styles.categoryTitle}>{category.name}</Text>
+            <TouchableOpacity
+              style={styles.categoryButton}
+              onPress={() => {
+                const firstInterest = category.interests[0];
+                if (firstInterest && !selectedInterests.includes(firstInterest)) {
+                  toggleInterest(firstInterest);
+                }
+              }}
+            >
+              <Text style={styles.categoryTitle}>{category.name}</Text>
+            </TouchableOpacity>
+
             <View style={styles.interestsGrid}>
               {category.interests.map((interest, interestIndex) => {
                 const isSelected = selectedInterests.includes(interest);
@@ -91,11 +164,12 @@ export default function InterestsScreen() {
                   <TouchableOpacity
                     key={interestIndex}
                     style={[
-                      styles.interestChip,
-                      isSelected && styles.interestChipSelected,
+                      styles.interestCard,
+                      isSelected && styles.interestCardSelected,
                     ]}
                     onPress={() => toggleInterest(interest)}
                   >
+                    <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                     <Text
                       style={[
                         styles.interestText,
@@ -112,11 +186,11 @@ export default function InterestsScreen() {
         ))}
 
         <View style={styles.customSection}>
-          <Text style={styles.categoryTitle}>Add your own</Text>
+          <Text style={styles.customTitle}>Can&apos;t find what you&apos;re looking for?</Text>
           <View style={styles.customInputContainer}>
             <TextInput
               style={[commonStyles.input, styles.customInput]}
-              placeholder="Type a custom interest..."
+              placeholder="e.g. 'sourdough bread', 'looking for a..."
               placeholderTextColor={colors.textSecondary}
               value={customInterest}
               onChangeText={setCustomInterest}
@@ -124,12 +198,20 @@ export default function InterestsScreen() {
               returnKeyType="done"
             />
             <TouchableOpacity
-              style={[buttonStyles.primary, styles.addButton]}
+              style={styles.addIconButton}
               onPress={addCustomInterest}
             >
-              <Text style={[buttonStyles.text, { color: colors.card }]}>Add</Text>
+              <IconSymbol
+                ios_icon_name="plus"
+                android_material_icon_name="add"
+                size={24}
+                color={colors.textSecondary}
+              />
             </TouchableOpacity>
           </View>
+          <Text style={styles.customHint}>
+            We&apos;ll match you with people who share similar interests, even if worded differently
+          </Text>
         </View>
       </ScrollView>
 
@@ -138,13 +220,17 @@ export default function InterestsScreen() {
           style={[
             buttonStyles.primary,
             styles.button,
-            (selectedInterests.length < 3 || loading) && styles.buttonDisabled,
+            selectedInterests.length < 3 && styles.buttonDisabled,
           ]}
           onPress={handleContinue}
           disabled={selectedInterests.length < 3 || loading}
         >
           <Text style={[buttonStyles.text, { color: colors.card }]}>
-            {loading ? 'Saving...' : 'Continue'}
+            {selectedInterests.length < 3 
+              ? 'Select at least 3 interests' 
+              : loading 
+              ? 'Saving...' 
+              : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -161,50 +247,115 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 24,
+    textAlign: 'left',
     marginBottom: 8,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: 'left',
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  progressContainer: {
     marginBottom: 24,
   },
-  counter: {
-    backgroundColor: colors.highlight,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 24,
+  progressDots: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
   },
-  counterText: {
+  progressDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.disabled,
+  },
+  progressDotActive: {
+    backgroundColor: colors.primary,
+  },
+  progressText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    color: colors.textSecondary,
   },
-  category: {
+  selectedSection: {
     marginBottom: 24,
   },
-  categoryTitle: {
-    fontSize: 18,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
   },
-  interestsGrid: {
+  selectedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  interestChip: {
-    backgroundColor: colors.card,
+  selectedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingLeft: 12,
+    paddingRight: 10,
+    borderRadius: 24,
+  },
+  selectedEmoji: {
+    fontSize: 16,
+  },
+  selectedText: {
+    fontSize: 14,
+    color: colors.card,
+    fontWeight: '500',
+  },
+  removeButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  category: {
+    marginBottom: 20,
+  },
+  categoryButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.card,
+  },
+  interestsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  interestCard: {
+    backgroundColor: colors.card,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    minWidth: 100,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  interestChipSelected: {
+  interestCardSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+  },
+  interestEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
   },
   interestText: {
     fontSize: 14,
@@ -215,17 +366,37 @@ const styles = StyleSheet.create({
     color: colors.card,
   },
   customSection: {
+    marginTop: 12,
     marginBottom: 24,
+  },
+  customTitle: {
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: 12,
   },
   customInputContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+    marginBottom: 8,
   },
   customInput: {
     flex: 1,
   },
-  addButton: {
-    paddingHorizontal: 20,
+  addIconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  customHint: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   buttonContainer: {
     position: 'absolute',
@@ -239,6 +410,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
 });

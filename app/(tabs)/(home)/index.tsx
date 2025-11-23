@@ -55,16 +55,9 @@ export default function HomeScreen() {
     return `${mins} min`;
   };
 
-  const formatTimeDetailed = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    
-    if (hours > 0) {
-      return `${hours}:${remainingMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${remainingMins}:${secs.toString().padStart(2, '0')}`;
+  const formatEndTime = (seconds: number) => {
+    const endTime = new Date(Date.now() + seconds * 1000);
+    return endTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const handleToggle = async () => {
@@ -95,6 +88,8 @@ export default function HomeScreen() {
       'Hiking': '🥾',
       'Running': '🏃',
       'Yoga': '🧘',
+      'Cycling': '🚴',
+      'Bouldering': '🧗',
       'Photography': '📷',
       'Coffee': '☕',
       'Music': '🎵',
@@ -150,12 +145,12 @@ export default function HomeScreen() {
                   {
                     opacity: glowAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.3, 0.6],
+                      outputRange: [0.2, 0.4],
                     }),
                     transform: [{
                       scale: glowAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [1, 1.15],
+                        outputRange: [1, 1.2],
                       }),
                     }],
                   },
@@ -181,16 +176,16 @@ export default function HomeScreen() {
             </Animated.View>
           </View>
 
-          <Text style={styles.visibilityText}>
-            {isOpen 
-              ? "" 
-              : "You are not visible to others"}
-          </Text>
+          {!isOpen && (
+            <Text style={styles.visibilityText}>
+              You are not visible to others
+            </Text>
+          )}
 
           {isOpen && (
             <View style={styles.sessionInfo}>
               <Text style={styles.sessionTimer}>
-                Session auto-closes in {formatTime(remainingTime)} (ends at {new Date(Date.now() + remainingTime * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })})
+                Session auto-closes in {formatTime(remainingTime)} (ends at {formatEndTime(remainingTime)})
               </Text>
               <View style={styles.sessionActions}>
                 <TouchableOpacity onPress={closeSession}>
@@ -209,7 +204,7 @@ export default function HomeScreen() {
           <View style={styles.interestsSection}>
             <Text style={styles.interestsTitle}>Your interests:</Text>
             <View style={styles.interestsGrid}>
-              {user.interests.slice(0, 6).map((interest, index) => (
+              {user.interests.map((interest, index) => (
                 <View key={index} style={styles.interestChip}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={styles.interestText}>{interest}</Text>
@@ -281,9 +276,9 @@ const styles = StyleSheet.create({
   },
   glowOuter: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
     backgroundColor: colors.primary,
   },
   circle: {

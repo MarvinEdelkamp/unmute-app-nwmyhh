@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
@@ -23,7 +23,6 @@ export default function PendingMatchScreen() {
 
   const handleInterested = async () => {
     await respondToMatch(pendingMatch.id, true);
-    router.back();
   };
 
   const handleNotNow = async () => {
@@ -36,196 +35,171 @@ export default function PendingMatchScreen() {
   };
 
   return (
-    <View style={[commonStyles.container, styles.container]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Confirm</Text>
+    <Modal
+      visible={true}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <View style={[commonStyles.container, styles.container]}>
+        <View style={styles.header}>
+          <View style={styles.dragHandle} />
+        </View>
+
+        <View style={styles.content}>
+          <Text style={styles.title}>
+            Someone here shares your interests
+          </Text>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>You both love:</Text>
+            <View style={styles.interestsRow}>
+              {pendingMatch.sharedInterests.map((interest, index) => (
+                <View key={index} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.locationSection}>
+            <Text style={styles.locationLabel}>Approximate area:</Text>
+            <Text style={styles.locationText}>English Garden</Text>
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              If you both agree, you&apos;ll see each other&apos;s profile and can say hi in person
+            </Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[buttonStyles.primary, styles.button]}
+              onPress={handleInterested}
+            >
+              <Text style={[buttonStyles.text]}>
+                See if you&apos;re both ready
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[buttonStyles.secondary, styles.button]}
+              onPress={handleNotNow}
+            >
+              <Text style={buttonStyles.textSecondary}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <IconSymbol 
             ios_icon_name="xmark" 
             android_material_icon_name="close" 
-            size={24} 
+            size={20} 
             color={colors.text} 
           />
         </TouchableOpacity>
       </View>
-
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>
-          Share your profile with this match?
-        </Text>
-
-        <Text style={styles.subtitle}>
-          Once you both confirm, you can coordinate and meet
-        </Text>
-
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>They&apos;ll see:</Text>
-          
-          <View style={styles.infoItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle" 
-              size={20} 
-              color={colors.primary} 
-            />
-            <Text style={styles.infoText}>Your first name</Text>
-          </View>
-
-          <View style={styles.infoItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle" 
-              size={20} 
-              color={colors.primary} 
-            />
-            <Text style={styles.infoText}>Your profile photo (if set)</Text>
-          </View>
-
-          <View style={styles.infoItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle" 
-              size={20} 
-              color={colors.primary} 
-            />
-            <Text style={styles.infoText}>Your shared interests</Text>
-          </View>
-
-          <View style={styles.infoItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle" 
-              size={20} 
-              color={colors.primary} 
-            />
-            <Text style={styles.infoText}>Approximate location</Text>
-          </View>
-        </View>
-
-        <View style={styles.privacyBox}>
-          <IconSymbol 
-            ios_icon_name="lock.fill" 
-            android_material_icon_name="lock" 
-            size={18} 
-            color={colors.primary} 
-          />
-          <Text style={styles.privacyText}>
-            Your privacy: We never share your exact location. Only both of you can see this match.
-          </Text>
-        </View>
-      </ScrollView>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[buttonStyles.primary, styles.button]}
-          onPress={handleInterested}
-        >
-          <Text style={[buttonStyles.text]}>
-            Yes, share my profile
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[buttonStyles.secondary, styles.button]}
-          onPress={handleNotNow}
-        >
-          <Text style={buttonStyles.textSecondary}>Not interested</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    paddingTop: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  closeButton: {
-    padding: 8,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 200,
+    paddingTop: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
     marginBottom: 32,
-    lineHeight: 22,
+    textAlign: 'center',
   },
-  infoSection: {
-    backgroundColor: colors.secondary,
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
+  section: {
+    marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  sectionLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginBottom: 12,
   },
-  infoText: {
-    fontSize: 15,
-    color: colors.text,
-  },
-  privacyBox: {
+  interestsRow: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  interestChip: {
     backgroundColor: colors.highlight,
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.primaryLight,
   },
-  privacyText: {
-    flex: 1,
+  interestText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  locationSection: {
+    marginBottom: 24,
+  },
+  locationLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  locationText: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: colors.secondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 32,
+  },
+  infoText: {
     fontSize: 14,
     color: colors.text,
     lineHeight: 20,
+    textAlign: 'center',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    backgroundColor: colors.background,
     gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginBottom: 24,
   },
   button: {
     width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0px 2px 4px ${colors.shadow}`,
+    elevation: 2,
   },
 });
