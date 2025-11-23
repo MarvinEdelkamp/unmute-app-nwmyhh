@@ -22,12 +22,12 @@ export default function PendingMatchScreen() {
 
   // Mark as mounted after initial render
   useEffect(() => {
-    console.log('Pending match screen mounted');
+    console.log('[PendingMatch] Screen mounted');
     mountedRef.current = true;
     hasRespondedRef.current = false;
     
     return () => {
-      console.log('Pending match screen unmounted');
+      console.log('[PendingMatch] Screen unmounted');
       mountedRef.current = false;
     };
   }, []);
@@ -40,7 +40,7 @@ export default function PendingMatchScreen() {
     }
 
     if (!pendingMatch) {
-      console.log('No pending match found, closing screen');
+      console.log('[PendingMatch] No pending match found, closing screen');
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
@@ -59,7 +59,7 @@ export default function PendingMatchScreen() {
         (pendingMatch.status === 'user_b_interested' && pendingMatch.userB.id === user?.id);
       
       if (isCurrentUserInterested && !isResponding) {
-        console.log('Current user already responded, navigating to confirm');
+        console.log('[PendingMatch] Current user already responded, navigating to confirm');
         hasRespondedRef.current = true;
         setTimeout(() => {
           if (mountedRef.current) {
@@ -73,13 +73,13 @@ export default function PendingMatchScreen() {
   const handleInterested = async () => {
     if (isResponding || !pendingMatch || hasRespondedRef.current) return;
     
-    console.log('User interested in match:', pendingMatch.id);
+    console.log('[PendingMatch] User interested in match:', pendingMatch.id);
     setIsResponding(true);
     hasRespondedRef.current = true;
     
     try {
       await respondToMatch(pendingMatch.id, true);
-      console.log('Response saved, navigating to confirm');
+      console.log('[PendingMatch] Response saved, navigating to confirm');
       
       // Navigate to confirm screen after a short delay
       setTimeout(() => {
@@ -91,7 +91,7 @@ export default function PendingMatchScreen() {
         }, 500);
       }, 400);
     } catch (error) {
-      console.error('Error responding to match:', error);
+      console.error('[PendingMatch] Error responding to match:', error);
       setIsResponding(false);
       hasRespondedRef.current = false;
     }
@@ -100,13 +100,13 @@ export default function PendingMatchScreen() {
   const handleNotNow = async () => {
     if (isResponding || !pendingMatch || hasRespondedRef.current) return;
     
-    console.log('User declined match:', pendingMatch.id);
+    console.log('[PendingMatch] User declined match:', pendingMatch.id);
     setIsResponding(true);
     hasRespondedRef.current = true;
     
     try {
       await respondToMatch(pendingMatch.id, false);
-      console.log('Match declined, closing screen');
+      console.log('[PendingMatch] Match declined, closing screen');
       
       setVisible(false);
       setTimeout(() => {
@@ -118,7 +118,7 @@ export default function PendingMatchScreen() {
         }, 300);
       }, 200);
     } catch (error) {
-      console.error('Error declining match:', error);
+      console.error('[PendingMatch] Error declining match:', error);
       setIsResponding(false);
       hasRespondedRef.current = false;
     }
@@ -126,7 +126,7 @@ export default function PendingMatchScreen() {
 
   const handleClose = () => {
     if (!isResponding) {
-      console.log('User closed pending match screen');
+      console.log('[PendingMatch] User closed screen');
       setVisible(false);
       setTimeout(() => {
         if (mountedRef.current) {
@@ -161,9 +161,11 @@ export default function PendingMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <View key={`shared-interest-${index}-${interest}`} style={styles.interestChip}>
-                  <Text style={styles.interestText}>{interest}</Text>
-                </View>
+                <React.Fragment key={`shared-interest-${index}-${interest}`}>
+                  <View style={styles.interestChip}>
+                    <Text style={styles.interestText}>{interest}</Text>
+                  </View>
+                </React.Fragment>
               ))}
             </View>
           </View>

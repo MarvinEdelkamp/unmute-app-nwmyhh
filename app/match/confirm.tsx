@@ -22,12 +22,12 @@ export default function ConfirmMatchScreen() {
 
   // Mark as mounted after initial render
   useEffect(() => {
-    console.log('Confirm match screen mounted');
+    console.log('[ConfirmMatch] Screen mounted');
     mountedRef.current = true;
     hasConfirmedRef.current = false;
     
     return () => {
-      console.log('Confirm match screen unmounted');
+      console.log('[ConfirmMatch] Screen unmounted');
       mountedRef.current = false;
     };
   }, []);
@@ -39,7 +39,7 @@ export default function ConfirmMatchScreen() {
     }
 
     if (!readyMatch) {
-      console.log('No match waiting for confirmation, going back');
+      console.log('[ConfirmMatch] No match waiting for confirmation, going back');
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
@@ -54,7 +54,7 @@ export default function ConfirmMatchScreen() {
     // Check if both users have confirmed
     const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_ready');
     if (bothReady) {
-      console.log('Both users ready, navigating to ready screen');
+      console.log('[ConfirmMatch] Both users ready, navigating to ready screen');
       hasConfirmedRef.current = true;
       setTimeout(() => {
         if (mountedRef.current) {
@@ -67,13 +67,13 @@ export default function ConfirmMatchScreen() {
   const handleConfirm = async () => {
     if (!readyMatch || isConfirming || hasConfirmedRef.current) return;
     
-    console.log('User confirmed match:', readyMatch.id);
+    console.log('[ConfirmMatch] User confirmed match:', readyMatch.id);
     setIsConfirming(true);
     hasConfirmedRef.current = true;
     
     try {
       await confirmMatch(readyMatch.id);
-      console.log('Match confirmed, navigating to ready screen');
+      console.log('[ConfirmMatch] Match confirmed, navigating to ready screen');
       
       setTimeout(() => {
         if (mountedRef.current) {
@@ -84,7 +84,7 @@ export default function ConfirmMatchScreen() {
         }, 500);
       }, 400);
     } catch (error) {
-      console.error('Error confirming match:', error);
+      console.error('[ConfirmMatch] Error confirming match:', error);
       setIsConfirming(false);
       hasConfirmedRef.current = false;
     }
@@ -93,7 +93,7 @@ export default function ConfirmMatchScreen() {
   const handleNotInterested = () => {
     if (isConfirming) return;
     
-    console.log('User not interested in confirming');
+    console.log('[ConfirmMatch] User not interested in confirming');
     setVisible(false);
     setTimeout(() => {
       if (mountedRef.current) {
@@ -105,7 +105,7 @@ export default function ConfirmMatchScreen() {
   const handleClose = () => {
     if (isConfirming) return;
     
-    console.log('User closed confirm screen');
+    console.log('[ConfirmMatch] User closed screen');
     setVisible(false);
     setTimeout(() => {
       if (mountedRef.current) {
@@ -117,6 +117,13 @@ export default function ConfirmMatchScreen() {
   if (!readyMatch) {
     return null;
   }
+
+  const infoItems = [
+    'Your first name',
+    'Your profile photo (if set)',
+    'Your shared interests',
+    'Approximate location'
+  ];
 
   return (
     <Modal
@@ -154,53 +161,21 @@ export default function ConfirmMatchScreen() {
           <View style={styles.infoBox}>
             <Text style={styles.infoLabel}>They&apos;ll see:</Text>
             
-            <View style={styles.infoItem}>
-              <View style={styles.checkCircle}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <Text style={styles.infoText}>Your first name</Text>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.checkCircle}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <Text style={styles.infoText}>Your profile photo (if set)</Text>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.checkCircle}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <Text style={styles.infoText}>Your shared interests</Text>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.checkCircle}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <Text style={styles.infoText}>Approximate location</Text>
-            </View>
+            {infoItems.map((item, index) => (
+              <React.Fragment key={`info-item-${index}-${item}`}>
+                <View style={styles.infoItem}>
+                  <View style={styles.checkCircle}>
+                    <IconSymbol 
+                      ios_icon_name="checkmark" 
+                      android_material_icon_name="check" 
+                      size={16} 
+                      color={colors.primary} 
+                    />
+                  </View>
+                  <Text style={styles.infoText}>{item}</Text>
+                </View>
+              </React.Fragment>
+            ))}
           </View>
 
           <View style={styles.privacyBox}>

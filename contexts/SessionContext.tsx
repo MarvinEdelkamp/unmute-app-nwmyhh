@@ -35,20 +35,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const isOpen = session?.status === 'open';
 
   useEffect(() => {
+    console.log('[SessionContext] Initializing...');
     loadSession();
     loadMatches();
 
     return () => {
+      console.log('[SessionContext] Cleaning up...');
       cleanup();
     };
   }, []);
 
   useEffect(() => {
     if (isOpen && session && !isCleaningUp.current) {
+      console.log('[SessionContext] Session is open, starting tracking');
       startLocationTracking();
       startMatchChecking();
       startTimer();
     } else {
+      console.log('[SessionContext] Session is closed, stopping tracking');
       stopLocationTracking();
       stopMatchChecking();
       stopTimer();
@@ -73,6 +77,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const loadSession = async () => {
     try {
+      console.log('[SessionContext] Loading session from storage...');
       const sessionData = await storage.getItem<Session>('session');
       if (sessionData) {
         const now = new Date();
@@ -80,41 +85,48 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         
         if (now < expiresAt && sessionData.status === 'open') {
           setSession(sessionData);
-          console.log('Session loaded successfully:', sessionData.id);
+          console.log('[SessionContext] Session loaded successfully:', sessionData.id);
         } else {
           await storage.removeItem('session');
-          console.log('Expired session removed');
+          console.log('[SessionContext] Expired session removed');
         }
+      } else {
+        console.log('[SessionContext] No session found in storage');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_LOAD');
-      console.error('Error loading session:', error);
+      console.error('[SessionContext] Error loading session:', error);
     }
   };
 
   const loadMatches = async () => {
     try {
+      console.log('[SessionContext] Loading matches from storage...');
       const matchesData = await storage.getItem<Match[]>('matches');
       if (matchesData && Array.isArray(matchesData)) {
         setMatches(matchesData);
-        console.log('Matches loaded successfully:', matchesData.length);
+        console.log('[SessionContext] Matches loaded successfully:', matchesData.length);
+      } else {
+        console.log('[SessionContext] No matches found in storage');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_LOAD_MATCHES');
-      console.error('Error loading matches:', error);
+      console.error('[SessionContext] Error loading matches:', error);
     }
   };
 
   const refreshMatches = async () => {
-    console.log('Refreshing matches from storage');
+    console.log('[SessionContext] Refreshing matches from storage');
     await loadMatches();
   };
 
   const startTimer = () => {
     if (timerInterval.current) {
+      console.log('[SessionContext] Timer already running');
       return;
     }
     
+    console.log('[SessionContext] Starting timer');
     timerInterval.current = setInterval(() => {
       if (session && !isCleaningUp.current) {
         const now = new Date();
@@ -124,7 +136,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setRemainingTime(remaining);
         
         if (remaining === 0) {
-          console.log('Session expired, closing automatically');
+          console.log('[SessionContext] Session expired, closing automatically');
           closeSession();
         }
       }
@@ -133,6 +145,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const stopTimer = () => {
     if (timerInterval.current) {
+      console.log('[SessionContext] Stopping timer');
       clearInterval(timerInterval.current);
       timerInterval.current = null;
     }
@@ -141,12 +154,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const startLocationTracking = async () => {
     try {
       if (locationSubscription.current) {
+        console.log('[SessionContext] Location tracking already active');
         return;
       }
 
+      console.log('[SessionContext] Requesting location permissions...');
       const { status } = await Location.requestForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
-        console.warn('Location permission denied');
+        console.warn('[SessionContext] Location permission denied');
         errorHandler.showError(
           'Location access is required to find people nearby. Please enable it in settings.',
           'Location Required'
@@ -154,6 +170,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log('[SessionContext] Starting location tracking...');
       locationSubscription.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
@@ -162,23 +179,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         },
         (location) => {
           if (!isCleaningUp.current) {
+            console.log('[SessionContext] Location updated:', location.coords.latitude, location.coords.longitude);
             updateLocation(location.coords.latitude, location.coords.longitude);
           }
         }
       );
 
-      console.log('Location tracking started');
+      console.log('[SessionContext] Location tracking started successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_LOCATION_START');
-      console.error('Error starting location tracking:', error);
+      console.error('[SessionContext] Error starting location tracking:', error);
     }
   };
 
   const stopLocationTracking = () => {
     if (locationSubscription.current) {
+      console.log('[SessionContext] Stopping location tracking');
       locationSubscription.current.remove();
       locationSubscription.current = null;
-      console.log('Location tracking stopped');
     }
   };
 
@@ -188,37 +206,39 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const updatedSession = { ...session, latitude, longitude };
         setSession(updatedSession);
         await storage.setItem('session', updatedSession);
+        console.log('[SessionContext] Location updated in session');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_UPDATE_LOCATION');
-      console.error('Error updating location:', error);
+      console.error('[SessionContext] Error updating location:', error);
     }
   };
 
   const startMatchChecking = () => {
     if (matchCheckInterval.current) {
+      console.log('[SessionContext] Match checking already active');
       return;
     }
     
+    console.log('[SessionContext] Starting match checking');
     matchCheckInterval.current = setInterval(() => {
       if (!isCleaningUp.current) {
         checkForMatches();
       }
     }, 45000);
-
-    console.log('Match checking started');
   };
 
   const stopMatchChecking = () => {
     if (matchCheckInterval.current) {
+      console.log('[SessionContext] Stopping match checking');
       clearInterval(matchCheckInterval.current);
       matchCheckInterval.current = null;
-      console.log('Match checking stopped');
     }
   };
 
   const checkForMatches = async () => {
     try {
+      console.log('[SessionContext] Checking for matches...');
       if (Math.random() > 0.9 && user && !isCleaningUp.current) {
         const mockMatch: Match = {
           id: Date.now().toString(),
@@ -240,11 +260,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const updatedMatches = [...matches, mockMatch];
         setMatches(updatedMatches);
         await storage.setItem('matches', updatedMatches);
-        console.log('New match created:', mockMatch.id);
+        console.log('[SessionContext] New match created:', mockMatch.id);
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CHECK_MATCHES');
-      console.error('Error checking for matches:', error);
+      console.error('[SessionContext] Error checking for matches:', error);
     }
   };
 
@@ -254,6 +274,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No user logged in');
       }
 
+      console.log('[SessionContext] Opening session...');
       const settingsData = await storage.getItem<{ defaultOpenTime: number }>('settings');
       const defaultOpenTime = settingsData?.defaultOpenTime || 45;
       
@@ -274,7 +295,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setSession(newSession);
-      console.log('Session opened successfully:', newSession.id);
+      console.log('[SessionContext] Session opened successfully:', newSession.id);
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_OPEN');
       errorHandler.showError('Failed to open session. Please try again.');
@@ -285,18 +306,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const closeSession = async () => {
     try {
       if (session) {
+        console.log('[SessionContext] Closing session...');
         isCleaningUp.current = true;
         await storage.removeItem('session');
         setSession(null);
         setRemainingTime(0);
-        console.log('Session closed successfully');
+        console.log('[SessionContext] Session closed successfully');
         setTimeout(() => {
           isCleaningUp.current = false;
         }, 100);
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CLOSE');
-      console.error('Error closing session:', error);
+      console.error('[SessionContext] Error closing session:', error);
       isCleaningUp.current = false;
     }
   };
@@ -304,6 +326,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const extendSession = async () => {
     try {
       if (session) {
+        console.log('[SessionContext] Extending session...');
         const currentExpiresAt = new Date(session.expiresAt);
         const newExpiresAt = new Date(currentExpiresAt.getTime() + 30 * 60000);
         
@@ -315,7 +338,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
 
         setSession(extendedSession);
-        console.log('Session extended successfully');
+        console.log('[SessionContext] Session extended successfully');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_EXTEND');
@@ -326,7 +349,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const respondToMatch = async (matchId: string, interested: boolean) => {
     try {
-      console.log('Responding to match:', matchId, 'interested:', interested);
+      console.log('[SessionContext] Responding to match:', matchId, 'interested:', interested);
       
       const currentMatches = await storage.getItem<Match[]>('matches') || [];
       const matchIndex = currentMatches.findIndex(m => m.id === matchId);
@@ -348,7 +371,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      console.log('Updating match status from', match.status, 'to', newStatus);
+      console.log('[SessionContext] Updating match status from', match.status, 'to', newStatus);
 
       const updatedMatch = { ...match, status: newStatus };
       const updatedMatches = [...currentMatches];
@@ -361,7 +384,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setMatches(updatedMatches);
-      console.log('Match response saved successfully');
+      console.log('[SessionContext] Match response saved successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_RESPOND_MATCH');
       errorHandler.showError('Failed to respond to match. Please try again.');
@@ -371,7 +394,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const confirmMatch = async (matchId: string) => {
     try {
-      console.log('Confirming match:', matchId);
+      console.log('[SessionContext] Confirming match:', matchId);
       
       const currentMatches = await storage.getItem<Match[]>('matches') || [];
       const matchIndex = currentMatches.findIndex(m => m.id === matchId);
@@ -392,7 +415,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setMatches(updatedMatches);
-      console.log('Match confirmed successfully');
+      console.log('[SessionContext] Match confirmed successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CONFIRM_MATCH');
       errorHandler.showError('Failed to confirm match. Please try again.');
@@ -402,7 +425,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const closeMatch = async (matchId: string) => {
     try {
-      console.log('Closing match:', matchId);
+      console.log('[SessionContext] Closing match:', matchId);
       
       const currentMatches = await storage.getItem<Match[]>('matches') || [];
       const updatedMatches = currentMatches.filter(m => m.id !== matchId);
@@ -414,10 +437,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setMatches(updatedMatches);
-      console.log('Match closed successfully');
+      console.log('[SessionContext] Match closed successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_CLOSE_MATCH');
-      console.error('Error closing match:', error);
+      console.error('[SessionContext] Error closing match:', error);
     }
   };
 
@@ -445,7 +468,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 export function useSession() {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    console.warn('useSession must be used within a SessionProvider, using defaults');
+    console.warn('[SessionContext] useSession must be used within a SessionProvider, using defaults');
     return {
       session: null,
       matches: [],

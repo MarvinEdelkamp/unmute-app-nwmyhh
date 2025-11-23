@@ -27,11 +27,11 @@ export default function ReadyMatchScreen() {
 
   // Mark as mounted after initial render
   useEffect(() => {
-    console.log('Ready match screen mounted');
+    console.log('[ReadyMatch] Screen mounted');
     mountedRef.current = true;
     
     return () => {
-      console.log('Ready match screen unmounted');
+      console.log('[ReadyMatch] Screen unmounted');
       mountedRef.current = false;
     };
   }, []);
@@ -43,7 +43,7 @@ export default function ReadyMatchScreen() {
     }
 
     if (!readyMatch) {
-      console.log('No ready match found, closing screen');
+      console.log('[ReadyMatch] No ready match found, closing screen');
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
@@ -62,7 +62,7 @@ export default function ReadyMatchScreen() {
   const otherUser = readyMatch.userA.id === user?.id ? readyMatch.userB : readyMatch.userA;
 
   const handleSayHi = () => {
-    console.log('User confirmed they will say hi');
+    console.log('[ReadyMatch] User confirmed they will say hi');
     closeMatch(readyMatch.id);
     setVisible(false);
     setTimeout(() => {
@@ -73,7 +73,7 @@ export default function ReadyMatchScreen() {
   };
 
   const handleChangedMind = () => {
-    console.log('User changed their mind');
+    console.log('[ReadyMatch] User changed their mind');
     closeMatch(readyMatch.id);
     setVisible(false);
     setTimeout(() => {
@@ -84,11 +84,11 @@ export default function ReadyMatchScreen() {
   };
 
   const handleBlockReport = () => {
-    console.log('Block or report pressed');
+    console.log('[ReadyMatch] Block or report pressed');
   };
 
   const handleClose = () => {
-    console.log('User closed ready match screen');
+    console.log('[ReadyMatch] User closed screen');
     setVisible(false);
     setTimeout(() => {
       if (mountedRef.current) {
@@ -99,7 +99,7 @@ export default function ReadyMatchScreen() {
 
   const handlePresetPress = (message: string) => {
     setSelectedPreset(message);
-    console.log('Preset message selected:', message);
+    console.log('[ReadyMatch] Preset message selected:', message);
   };
 
   const getInitials = (name: string) => {
@@ -158,9 +158,11 @@ export default function ReadyMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {readyMatch.sharedInterests.map((interest, index) => (
-                <View key={`shared-interest-${index}-${interest}`} style={styles.interestChip}>
-                  <Text style={styles.interestText}>{interest}</Text>
-                </View>
+                <React.Fragment key={`shared-interest-${index}-${interest}`}>
+                  <View style={styles.interestChip}>
+                    <Text style={styles.interestText}>{interest}</Text>
+                  </View>
+                </React.Fragment>
               ))}
             </View>
           </View>
@@ -189,21 +191,22 @@ export default function ReadyMatchScreen() {
             <Text style={styles.coordinationLabel}>Help them find you (optional)</Text>
             
             {PRESET_MESSAGES.map((message, index) => (
-              <TouchableOpacity
-                key={`preset-${index}-${message}`}
-                style={[
-                  styles.presetButton,
-                  selectedPreset === message && styles.presetButtonSelected
-                ]}
-                onPress={() => handlePresetPress(message)}
-              >
-                <Text style={[
-                  styles.presetText,
-                  selectedPreset === message && styles.presetTextSelected
-                ]}>
-                  {message}
-                </Text>
-              </TouchableOpacity>
+              <React.Fragment key={`preset-${index}-${message}`}>
+                <TouchableOpacity
+                  style={[
+                    styles.presetButton,
+                    selectedPreset === message && styles.presetButtonSelected
+                  ]}
+                  onPress={() => handlePresetPress(message)}
+                >
+                  <Text style={[
+                    styles.presetText,
+                    selectedPreset === message && styles.presetTextSelected
+                  ]}>
+                    {message}
+                  </Text>
+                </TouchableOpacity>
+              </React.Fragment>
             ))}
 
             <TextInput

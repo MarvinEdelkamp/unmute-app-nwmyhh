@@ -22,6 +22,17 @@ export default function HomeScreen() {
   const navigationLockRef = React.useRef(false);
   const lastMatchCheckRef = React.useRef<string>('');
   const hasNavigatedRef = React.useRef(false);
+  const mountedRef = React.useRef(true);
+
+  useEffect(() => {
+    console.log('[Home] Component mounted');
+    mountedRef.current = true;
+    
+    return () => {
+      console.log('[Home] Component unmounting');
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -92,11 +103,11 @@ export default function HomeScreen() {
 
   const handleDemoMatch = async () => {
     if (!user || isCreatingDemo || navigationLockRef.current) {
-      console.log('Demo button blocked - already in progress');
+      console.log('[Home] Demo button blocked - already in progress or no user');
       return;
     }
     
-    console.log('Demo button pressed - creating mock match');
+    console.log('[Home] Demo button pressed - creating mock match');
     setIsCreatingDemo(true);
     navigationLockRef.current = true;
     hasNavigatedRef.current = false;
@@ -125,7 +136,7 @@ export default function HomeScreen() {
       const updatedMatches = [...existingMatches, mockMatch];
       await storage.setItem('matches', updatedMatches);
       
-      console.log('Demo match created successfully:', mockMatch.id);
+      console.log('[Home] Demo match created successfully:', mockMatch.id);
       
       // Refresh matches in context
       await refreshMatches();
@@ -134,20 +145,22 @@ export default function HomeScreen() {
       
       // Navigate to pending match screen after a short delay
       setTimeout(() => {
-        if (!hasNavigatedRef.current) {
-          console.log('Navigating to pending match screen from demo button');
+        if (!hasNavigatedRef.current && mountedRef.current) {
+          console.log('[Home] Navigating to pending match screen from demo button');
           hasNavigatedRef.current = true;
           router.push('/match/pending');
           
           // Release the lock after navigation completes
           setTimeout(() => {
-            setIsCreatingDemo(false);
-            navigationLockRef.current = false;
+            if (mountedRef.current) {
+              setIsCreatingDemo(false);
+              navigationLockRef.current = false;
+            }
           }, 1500);
         }
       }, 400);
     } catch (error) {
-      console.error('Error creating demo match:', error);
+      console.error('[Home] Error creating demo match:', error);
       hapticFeedback.error();
       setIsCreatingDemo(false);
       navigationLockRef.current = false;
@@ -161,6 +174,8 @@ export default function HomeScreen() {
   // Auto-navigate to match screens when matches are available
   // But only if we're not in the middle of creating a demo or already navigating
   useEffect(() => {
+    if (!mountedRef.current) return;
+    
     // Create a unique identifier for the current match state
     const matchStateId = `${pendingMatches.length}-${readyMatches.length}-${matches.map(m => m.id).join(',')}`;
     
@@ -173,28 +188,36 @@ export default function HomeScreen() {
 
     // Only auto-navigate if there are new matches
     if (pendingMatches.length > 0 && !isCreatingDemo) {
-      console.log('Auto-navigating to pending match');
+      console.log('[Home] Auto-navigating to pending match');
       hasNavigatedRef.current = true;
       navigationLockRef.current = true;
       hapticFeedback.success();
       
       setTimeout(() => {
-        router.push('/match/pending');
-        setTimeout(() => {
-          navigationLockRef.current = false;
-        }, 1500);
+        if (mountedRef.current) {
+          router.push('/match/pending');
+          setTimeout(() => {
+            if (mountedRef.current) {
+              navigationLockRef.current = false;
+            }
+          }, 1500);
+        }
       }, 200);
     } else if (readyMatches.length > 0 && !isCreatingDemo) {
-      console.log('Auto-navigating to ready match');
+      console.log('[Home] Auto-navigating to ready match');
       hasNavigatedRef.current = true;
       navigationLockRef.current = true;
       hapticFeedback.success();
       
       setTimeout(() => {
-        router.push('/match/ready');
-        setTimeout(() => {
-          navigationLockRef.current = false;
-        }, 1500);
+        if (mountedRef.current) {
+          router.push('/match/ready');
+          setTimeout(() => {
+            if (mountedRef.current) {
+              navigationLockRef.current = false;
+            }
+          }, 1500);
+        }
       }, 200);
     }
   }, [matches, pendingMatches.length, readyMatches.length, isCreatingDemo]);
@@ -202,7 +225,9 @@ export default function HomeScreen() {
   // Reset navigation flag when returning to home screen
   useEffect(() => {
     const resetNavigation = () => {
-      hasNavigatedRef.current = false;
+      if (mountedRef.current) {
+        hasNavigatedRef.current = false;
+      }
     };
     
     // Reset after a delay to allow for screen transitions
@@ -394,10 +419,12 @@ export default function HomeScreen() {
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={`interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
-                  <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
-                  <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
-                </View>
+                <React.Fragment key={`interest-${index}-${interest}`}>
+                  <View style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
+                    <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
+                    <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
+                  </View>
+                </React.Fragment>
               ))}
             </View>
           </View>

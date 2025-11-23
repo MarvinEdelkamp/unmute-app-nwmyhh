@@ -11,38 +11,70 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LocationScreen() {
   const { completeOnboarding } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
 
   const handleEnableLocation = async () => {
+    if (loading) return;
+    
     try {
       setLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPermissionStatus('requesting');
+      console.log('[Location] Requesting foreground location permissions...');
       
-      // Mark onboarding as complete before navigating
-      await completeOnboarding();
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('[Location] Permission status:', status);
       
       if (status === 'granted') {
+        setPermissionStatus('granted');
+        console.log('[Location] Permission granted, completing onboarding');
+        
+        // Mark onboarding as complete
+        await completeOnboarding();
+        
+        // Navigate to signup
         router.replace('/auth/signup');
       } else {
+        setPermissionStatus('denied');
+        console.log('[Location] Permission denied');
+        
         Alert.alert(
           'Location Permission',
           'Location access is needed to find people nearby. You can enable it later in settings.',
           [
-            { text: 'OK', onPress: () => router.replace('/auth/signup') }
+            { 
+              text: 'OK', 
+              onPress: async () => {
+                await completeOnboarding();
+                router.replace('/auth/signup');
+              }
+            }
           ]
         );
       }
     } catch (error) {
-      console.log('Location permission error:', error);
-      Alert.alert('Error', 'Failed to request location permission');
+      console.error('[Location] Error requesting permission:', error);
+      setPermissionStatus('idle');
+      Alert.alert(
+        'Error',
+        'Failed to request location permission. Please try again.',
+        [
+          { text: 'OK' }
+        ]
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleSkip = async () => {
-    // Mark onboarding as complete before navigating
-    await completeOnboarding();
-    router.replace('/auth/signup');
+    try {
+      console.log('[Location] User skipped location permission');
+      // Mark onboarding as complete before navigating
+      await completeOnboarding();
+      router.replace('/auth/signup');
+    } catch (error) {
+      console.error('[Location] Error skipping:', error);
+    }
   };
 
   return (
@@ -105,7 +137,10 @@ export default function LocationScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
-          style={styles.button}
+          style={[
+            styles.button,
+            loading && { opacity: 0.6 }
+          ]}
           onPress={handleEnableLocation}
           disabled={loading}
         >
@@ -117,6 +152,7 @@ export default function LocationScreen() {
         <TouchableOpacity 
           style={styles.skipButton}
           onPress={handleSkip}
+          disabled={loading}
         >
           <Text style={styles.skipText}>Not now</Text>
         </TouchableOpacity>
