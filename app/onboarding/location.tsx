@@ -239,9 +239,9 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    minHeight: 56,
-    paddingVertical: spacing.lg + spacing.xs,
-    paddingHorizontal: spacing.xxxl + spacing.lg,
+    minHeight: 58,
+    paddingVertical: spacing.lg + spacing.md,
+    paddingHorizontal: spacing.xxxl + spacing.xl,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -253,13 +253,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.card,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   skipButton: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   skipText: {
     fontSize: 16,

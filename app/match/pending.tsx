@@ -14,6 +14,7 @@ export default function PendingMatchScreen() {
   const [isResponding, setIsResponding] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
   const mountedRef = React.useRef(false);
+  const hasRespondedRef = React.useRef(false);
 
   const pendingMatch = matches.find(
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
@@ -23,6 +24,7 @@ export default function PendingMatchScreen() {
   useEffect(() => {
     console.log('Pending match screen mounted');
     mountedRef.current = true;
+    hasRespondedRef.current = false;
     
     return () => {
       console.log('Pending match screen unmounted');
@@ -33,7 +35,7 @@ export default function PendingMatchScreen() {
   // Check if current user has already responded
   useEffect(() => {
     // Don't do anything until we're fully mounted
-    if (!mountedRef.current) {
+    if (!mountedRef.current || hasRespondedRef.current) {
       return;
     }
 
@@ -42,7 +44,9 @@ export default function PendingMatchScreen() {
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
-          router.back();
+          if (mountedRef.current) {
+            router.back();
+          }
         }, 200);
       }, 500);
       return;
@@ -56,18 +60,22 @@ export default function PendingMatchScreen() {
       
       if (isCurrentUserInterested && !isResponding) {
         console.log('Current user already responded, navigating to confirm');
+        hasRespondedRef.current = true;
         setTimeout(() => {
-          router.replace('/match/confirm');
+          if (mountedRef.current) {
+            router.replace('/match/confirm');
+          }
         }, 500);
       }
     }
   }, [pendingMatch?.status, pendingMatch?.id]);
 
   const handleInterested = async () => {
-    if (isResponding || !pendingMatch) return;
+    if (isResponding || !pendingMatch || hasRespondedRef.current) return;
     
     console.log('User interested in match:', pendingMatch.id);
     setIsResponding(true);
+    hasRespondedRef.current = true;
     
     try {
       await respondToMatch(pendingMatch.id, true);
@@ -75,7 +83,9 @@ export default function PendingMatchScreen() {
       
       // Navigate to confirm screen after a short delay
       setTimeout(() => {
-        router.replace('/match/confirm');
+        if (mountedRef.current) {
+          router.replace('/match/confirm');
+        }
         setTimeout(() => {
           setIsResponding(false);
         }, 500);
@@ -83,14 +93,16 @@ export default function PendingMatchScreen() {
     } catch (error) {
       console.error('Error responding to match:', error);
       setIsResponding(false);
+      hasRespondedRef.current = false;
     }
   };
 
   const handleNotNow = async () => {
-    if (isResponding || !pendingMatch) return;
+    if (isResponding || !pendingMatch || hasRespondedRef.current) return;
     
     console.log('User declined match:', pendingMatch.id);
     setIsResponding(true);
+    hasRespondedRef.current = true;
     
     try {
       await respondToMatch(pendingMatch.id, false);
@@ -98,7 +110,9 @@ export default function PendingMatchScreen() {
       
       setVisible(false);
       setTimeout(() => {
-        router.back();
+        if (mountedRef.current) {
+          router.back();
+        }
         setTimeout(() => {
           setIsResponding(false);
         }, 300);
@@ -106,6 +120,7 @@ export default function PendingMatchScreen() {
     } catch (error) {
       console.error('Error declining match:', error);
       setIsResponding(false);
+      hasRespondedRef.current = false;
     }
   };
 
@@ -114,7 +129,9 @@ export default function PendingMatchScreen() {
       console.log('User closed pending match screen');
       setVisible(false);
       setTimeout(() => {
-        router.back();
+        if (mountedRef.current) {
+          router.back();
+        }
       }, 200);
     }
   };
@@ -144,11 +161,9 @@ export default function PendingMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <React.Fragment key={`shared-interest-${interest}-${index}`}>
-                  <View style={styles.interestChip}>
-                    <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-                </React.Fragment>
+                <View key={`shared-interest-${index}-${interest}`} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
               ))}
             </View>
           </View>

@@ -297,7 +297,7 @@ export default function InterestsScreen() {
               const isSelected = selectedInterests.includes(interest);
               return (
                 <TouchableOpacity
-                  key={`interest-${currentCategory.id}-${interest}-${index}`}
+                  key={`interest-${index}-${currentCategory.id}-${interest}`}
                   style={[
                     styles.interestCard,
                     { 

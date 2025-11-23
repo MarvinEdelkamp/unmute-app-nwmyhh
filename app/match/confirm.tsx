@@ -14,6 +14,7 @@ export default function ConfirmMatchScreen() {
   const [visible, setVisible] = React.useState(true);
   const [isConfirming, setIsConfirming] = React.useState(false);
   const mountedRef = React.useRef(false);
+  const hasConfirmedRef = React.useRef(false);
 
   const readyMatch = matches.find(
     m => m.status === 'user_a_interested' || m.status === 'user_b_interested'
@@ -23,6 +24,7 @@ export default function ConfirmMatchScreen() {
   useEffect(() => {
     console.log('Confirm match screen mounted');
     mountedRef.current = true;
+    hasConfirmedRef.current = false;
     
     return () => {
       console.log('Confirm match screen unmounted');
@@ -32,7 +34,7 @@ export default function ConfirmMatchScreen() {
 
   useEffect(() => {
     // Don't do anything until we're fully mounted
-    if (!mountedRef.current) {
+    if (!mountedRef.current || hasConfirmedRef.current) {
       return;
     }
 
@@ -41,7 +43,9 @@ export default function ConfirmMatchScreen() {
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
-          router.back();
+          if (mountedRef.current) {
+            router.back();
+          }
         }, 200);
       }, 500);
       return;
@@ -51,24 +55,30 @@ export default function ConfirmMatchScreen() {
     const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_ready');
     if (bothReady) {
       console.log('Both users ready, navigating to ready screen');
+      hasConfirmedRef.current = true;
       setTimeout(() => {
-        router.replace('/match/ready');
+        if (mountedRef.current) {
+          router.replace('/match/ready');
+        }
       }, 500);
     }
   }, [readyMatch?.id, matches]);
 
   const handleConfirm = async () => {
-    if (!readyMatch || isConfirming) return;
+    if (!readyMatch || isConfirming || hasConfirmedRef.current) return;
     
     console.log('User confirmed match:', readyMatch.id);
     setIsConfirming(true);
+    hasConfirmedRef.current = true;
     
     try {
       await confirmMatch(readyMatch.id);
       console.log('Match confirmed, navigating to ready screen');
       
       setTimeout(() => {
-        router.replace('/match/ready');
+        if (mountedRef.current) {
+          router.replace('/match/ready');
+        }
         setTimeout(() => {
           setIsConfirming(false);
         }, 500);
@@ -76,6 +86,7 @@ export default function ConfirmMatchScreen() {
     } catch (error) {
       console.error('Error confirming match:', error);
       setIsConfirming(false);
+      hasConfirmedRef.current = false;
     }
   };
 
@@ -85,7 +96,9 @@ export default function ConfirmMatchScreen() {
     console.log('User not interested in confirming');
     setVisible(false);
     setTimeout(() => {
-      router.back();
+      if (mountedRef.current) {
+        router.back();
+      }
     }, 200);
   };
 
@@ -95,7 +108,9 @@ export default function ConfirmMatchScreen() {
     console.log('User closed confirm screen');
     setVisible(false);
     setTimeout(() => {
-      router.back();
+      if (mountedRef.current) {
+        router.back();
+      }
     }, 200);
   };
 

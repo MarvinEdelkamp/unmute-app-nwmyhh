@@ -47,7 +47,9 @@ export default function ReadyMatchScreen() {
       setTimeout(() => {
         setVisible(false);
         setTimeout(() => {
-          router.back();
+          if (mountedRef.current) {
+            router.back();
+          }
         }, 200);
       }, 500);
     }
@@ -64,7 +66,9 @@ export default function ReadyMatchScreen() {
     closeMatch(readyMatch.id);
     setVisible(false);
     setTimeout(() => {
-      router.back();
+      if (mountedRef.current) {
+        router.back();
+      }
     }, 200);
   };
 
@@ -73,7 +77,9 @@ export default function ReadyMatchScreen() {
     closeMatch(readyMatch.id);
     setVisible(false);
     setTimeout(() => {
-      router.back();
+      if (mountedRef.current) {
+        router.back();
+      }
     }, 200);
   };
 
@@ -85,7 +91,9 @@ export default function ReadyMatchScreen() {
     console.log('User closed ready match screen');
     setVisible(false);
     setTimeout(() => {
-      router.back();
+      if (mountedRef.current) {
+        router.back();
+      }
     }, 200);
   };
 
@@ -150,11 +158,9 @@ export default function ReadyMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {readyMatch.sharedInterests.map((interest, index) => (
-                <React.Fragment key={`shared-interest-${interest}-${index}`}>
-                  <View style={styles.interestChip}>
-                    <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-                </React.Fragment>
+                <View key={`shared-interest-${index}-${interest}`} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
               ))}
             </View>
           </View>
@@ -183,22 +189,21 @@ export default function ReadyMatchScreen() {
             <Text style={styles.coordinationLabel}>Help them find you (optional)</Text>
             
             {PRESET_MESSAGES.map((message, index) => (
-              <React.Fragment key={`preset-${message}-${index}`}>
-                <TouchableOpacity
-                  style={[
-                    styles.presetButton,
-                    selectedPreset === message && styles.presetButtonSelected
-                  ]}
-                  onPress={() => handlePresetPress(message)}
-                >
-                  <Text style={[
-                    styles.presetText,
-                    selectedPreset === message && styles.presetTextSelected
-                  ]}>
-                    {message}
-                  </Text>
-                </TouchableOpacity>
-              </React.Fragment>
+              <TouchableOpacity
+                key={`preset-${index}-${message}`}
+                style={[
+                  styles.presetButton,
+                  selectedPreset === message && styles.presetButtonSelected
+                ]}
+                onPress={() => handlePresetPress(message)}
+              >
+                <Text style={[
+                  styles.presetText,
+                  selectedPreset === message && styles.presetTextSelected
+                ]}>
+                  {message}
+                </Text>
+              </TouchableOpacity>
             ))}
 
             <TextInput
