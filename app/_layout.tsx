@@ -2,7 +2,7 @@
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -26,17 +26,20 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const { user, isLoading, isOnboarded } = useAuth();
+  const segments = useSegments();
 
   useEffect(() => {
     if (!isLoading) {
-      // Only redirect if user is not in the middle of signup/onboarding flow
-      // Check if we're already on an auth or onboarding screen
-      const currentPath = window?.location?.pathname || '';
-      const isOnAuthScreen = currentPath.includes('/auth/');
-      const isOnOnboardingScreen = currentPath.includes('/onboarding/');
+      // Get the current route from segments
+      const inAuthGroup = segments[0] === 'auth';
+      const inOnboardingGroup = segments[0] === 'onboarding';
+      
+      console.log('Current segments:', segments);
+      console.log('User:', user);
+      console.log('IsOnboarded:', isOnboarded);
       
       // Don't redirect if user is already on auth/onboarding screens
-      if (isOnAuthScreen || isOnOnboardingScreen) {
+      if (inAuthGroup || inOnboardingGroup) {
         console.log('User is on auth/onboarding screen, not redirecting');
         return;
       }
@@ -50,7 +53,7 @@ function RootNavigator() {
         router.replace('/auth/signup');
       }
     }
-  }, [user, isLoading, isOnboarded]);
+  }, [user, isLoading, isOnboarded, segments]);
 
   if (isLoading) {
     return null;
