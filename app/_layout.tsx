@@ -89,19 +89,27 @@ function RootLayoutNav() {
   console.log('[App] App ready, rendering navigation');
 
   // Determine initial route based on app state
+  // Priority: onboarding -> signup -> interests -> main tabs
   let initialRoute = '/(tabs)';
   
+  // First check: Has user completed onboarding flow?
   if (!hasCompletedOnboarding) {
     initialRoute = '/onboarding';
-    console.log('[App] Redirecting to onboarding');
-  } else if (!user) {
+    console.log('[App] Redirecting to onboarding - user has not completed onboarding');
+  } 
+  // Second check: Is user logged in?
+  else if (!user) {
     initialRoute = '/auth/signup';
-    console.log('[App] Redirecting to signup');
-  } else if (!user.interests || user.interests.length === 0) {
+    console.log('[App] Redirecting to signup - user not logged in');
+  } 
+  // Third check: Does user have interests?
+  else if (!user.interests || user.interests.length === 0) {
     initialRoute = '/auth/interests';
-    console.log('[App] Redirecting to interests');
-  } else {
-    console.log('[App] Showing main tabs');
+    console.log('[App] Redirecting to interests - user has no interests');
+  } 
+  // All checks passed: show main app
+  else {
+    console.log('[App] Showing main tabs - all checks passed');
   }
 
   return (

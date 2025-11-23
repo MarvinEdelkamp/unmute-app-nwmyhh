@@ -40,9 +40,7 @@ export const validation = {
       return { valid: false, error: 'Please select at least 3 interests' };
     }
 
-    if (interests.length > 7) {
-      return { valid: false, error: 'You can select up to 7 interests' };
-    }
+    // No upper limit - users can select as many as they want
 
     return { valid: true };
   },
@@ -56,8 +54,8 @@ export const validation = {
       return { valid: false, error: 'Interest must be at least 2 characters' };
     }
 
-    if (interest.trim().length > 30) {
-      return { valid: false, error: 'Interest must be less than 30 characters' };
+    if (interest.trim().length > 50) {
+      return { valid: false, error: 'Interest must be less than 50 characters' };
     }
 
     return { valid: true };

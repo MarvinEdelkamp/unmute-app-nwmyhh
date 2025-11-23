@@ -37,6 +37,7 @@ export default function OnboardingScreen() {
       setLocationLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       
+      // Complete onboarding first
       await completeOnboarding();
       
       if (status === 'granted') {
@@ -49,15 +50,24 @@ export default function OnboardingScreen() {
     } catch (error) {
       console.log('Location permission error:', error);
       hapticFeedback.error();
+      // Still proceed to signup even if location fails
+      await completeOnboarding();
+      router.replace('/auth/signup');
     } finally {
       setLocationLoading(false);
     }
   };
 
   const handleSkipLocation = async () => {
-    await completeOnboarding();
-    hapticFeedback.light();
-    router.replace('/auth/signup');
+    try {
+      await completeOnboarding();
+      hapticFeedback.light();
+      router.replace('/auth/signup');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      // Still proceed to signup
+      router.replace('/auth/signup');
+    }
   };
 
   return (
@@ -354,16 +364,9 @@ export default function OnboardingScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom container with button and pagination */}
+      {/* Bottom container with pagination - no button, just swipe */}
       <View style={styles.bottomContainer}>
-        {currentPage < 3 ? (
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => scrollToPage(currentPage + 1)}
-          >
-            <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
-        ) : (
+        {currentPage === 3 ? (
           <>
             <TouchableOpacity 
               style={styles.button}
@@ -382,6 +385,8 @@ export default function OnboardingScreen() {
               <Text style={styles.skipText}>Not now</Text>
             </TouchableOpacity>
           </>
+        ) : (
+          <Text style={styles.swipeHint}>Swipe to continue</Text>
         )}
         
         <PaginationDots total={4} current={currentPage} />
@@ -655,6 +660,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 8,
+  },
+  swipeHint: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    paddingVertical: spacing.lg,
   },
   button: {
     width: '100%',
