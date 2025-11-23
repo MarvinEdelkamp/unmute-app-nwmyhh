@@ -29,9 +29,24 @@ function RootNavigator() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isOnboarded) {
+      // Only redirect if user is not in the middle of signup/onboarding flow
+      // Check if we're already on an auth or onboarding screen
+      const currentPath = window?.location?.pathname || '';
+      const isOnAuthScreen = currentPath.includes('/auth/');
+      const isOnOnboardingScreen = currentPath.includes('/onboarding/');
+      
+      // Don't redirect if user is already on auth/onboarding screens
+      if (isOnAuthScreen || isOnOnboardingScreen) {
+        console.log('User is on auth/onboarding screen, not redirecting');
+        return;
+      }
+
+      // Only redirect to welcome if user hasn't seen onboarding at all
+      if (!isOnboarded && !user) {
+        console.log('User not onboarded and no user, redirecting to welcome');
         router.replace('/onboarding/welcome');
       } else if (!user) {
+        console.log('No user but onboarded, redirecting to signup');
         router.replace('/auth/signup');
       }
     }

@@ -47,7 +47,8 @@ export default function SignUpScreen() {
     try {
       setLoading(true);
       await signUp(email, 'password123', name);
-      router.push('/auth/interests');
+      // Navigate to interests screen - DO NOT let the layout redirect us
+      router.replace('/auth/interests');
     } catch (error) {
       Alert.alert('Error', 'Failed to create profile. Please try again.');
       console.log('Sign up error:', error);
@@ -153,10 +154,11 @@ export default function SignUpScreen() {
           ]}
           onPress={handleContinue}
           disabled={!isFormValid || loading}
+          activeOpacity={0.8}
         >
           <Text style={[
             styles.buttonText,
-            !isFormValid && styles.buttonTextDisabled
+            isFormValid ? styles.buttonTextActive : styles.buttonTextDisabled
           ]}>
             {loading ? 'Creating...' : 'Continue'}
           </Text>
@@ -286,19 +288,23 @@ const styles = StyleSheet.create({
   buttonActive: {
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
   buttonDisabled: {
     backgroundColor: colors.disabled,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: colors.card,
     letterSpacing: 0.2,
+  },
+  buttonTextActive: {
+    color: '#FFFFFF',
   },
   buttonTextDisabled: {
     color: colors.textTertiary,

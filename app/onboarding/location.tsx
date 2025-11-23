@@ -6,8 +6,10 @@ import { colors, spacing, typography, borderRadius, layout } from '@/styles/comm
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Location from 'expo-location';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LocationScreen() {
+  const { completeOnboarding } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleEnableLocation = async () => {
@@ -15,15 +17,17 @@ export default function LocationScreen() {
       setLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       
+      // Mark onboarding as complete before navigating
+      await completeOnboarding();
+      
       if (status === 'granted') {
-        router.push('/auth/signup');
+        router.replace('/auth/signup');
       } else {
         Alert.alert(
           'Location Permission',
           'Location access is needed to find people nearby. You can enable it later in settings.',
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Go to Settings', onPress: () => Location.requestForegroundPermissionsAsync() }
+            { text: 'OK', onPress: () => router.replace('/auth/signup') }
           ]
         );
       }
@@ -35,8 +39,10 @@ export default function LocationScreen() {
     }
   };
 
-  const handleSkip = () => {
-    router.push('/auth/signup');
+  const handleSkip = async () => {
+    // Mark onboarding as complete before navigating
+    await completeOnboarding();
+    router.replace('/auth/signup');
   };
 
   return (
