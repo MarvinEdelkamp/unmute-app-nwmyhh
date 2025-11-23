@@ -162,19 +162,17 @@ export default function ConfirmMatchScreen() {
             <Text style={styles.infoLabel}>They&apos;ll see:</Text>
             
             {infoItems.map((item, index) => (
-              <React.Fragment key={`info-item-${index}-${item}`}>
-                <View style={styles.infoItem}>
-                  <View style={styles.checkCircle}>
-                    <IconSymbol 
-                      ios_icon_name="checkmark" 
-                      android_material_icon_name="check" 
-                      size={16} 
-                      color={colors.primary} 
-                    />
-                  </View>
-                  <Text style={styles.infoText}>{item}</Text>
+              <View key={`info-item-${index}-${item}`} style={styles.infoItem}>
+                <View style={styles.checkCircle}>
+                  <IconSymbol 
+                    ios_icon_name="checkmark" 
+                    android_material_icon_name="check" 
+                    size={16} 
+                    color={colors.primary} 
+                  />
                 </View>
-              </React.Fragment>
+                <Text style={styles.infoText}>{item}</Text>
+              </View>
             ))}
           </View>
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
@@ -12,9 +12,23 @@ export default function LocationScreen() {
   const { completeOnboarding } = useAuth();
   const [loading, setLoading] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const mountedRef = React.useRef(true);
+
+  useEffect(() => {
+    console.log('[Location] Screen mounted');
+    mountedRef.current = true;
+    
+    return () => {
+      console.log('[Location] Screen unmounting');
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleEnableLocation = async () => {
-    if (loading) return;
+    if (loading || !mountedRef.current) {
+      console.log('[Location] Button press ignored - already loading or unmounted');
+      return;
+    }
     
     try {
       setLoading(true);
@@ -24,6 +38,11 @@ export default function LocationScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       console.log('[Location] Permission status:', status);
       
+      if (!mountedRef.current) {
+        console.log('[Location] Component unmounted, aborting');
+        return;
+      }
+      
       if (status === 'granted') {
         setPermissionStatus('granted');
         console.log('[Location] Permission granted, completing onboarding');
@@ -31,8 +50,10 @@ export default function LocationScreen() {
         // Mark onboarding as complete
         await completeOnboarding();
         
-        // Navigate to signup
-        router.replace('/auth/signup');
+        if (mountedRef.current) {
+          // Navigate to signup
+          router.replace('/auth/signup');
+        }
       } else {
         setPermissionStatus('denied');
         console.log('[Location] Permission denied');
@@ -44,8 +65,10 @@ export default function LocationScreen() {
             { 
               text: 'OK', 
               onPress: async () => {
-                await completeOnboarding();
-                router.replace('/auth/signup');
+                if (mountedRef.current) {
+                  await completeOnboarding();
+                  router.replace('/auth/signup');
+                }
               }
             }
           ]
@@ -53,25 +76,36 @@ export default function LocationScreen() {
       }
     } catch (error) {
       console.error('[Location] Error requesting permission:', error);
-      setPermissionStatus('idle');
-      Alert.alert(
-        'Error',
-        'Failed to request location permission. Please try again.',
-        [
-          { text: 'OK' }
-        ]
-      );
+      if (mountedRef.current) {
+        setPermissionStatus('idle');
+        Alert.alert(
+          'Error',
+          'Failed to request location permission. Please try again.',
+          [
+            { text: 'OK' }
+          ]
+        );
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleSkip = async () => {
+    if (loading || !mountedRef.current) {
+      return;
+    }
+    
     try {
       console.log('[Location] User skipped location permission');
       // Mark onboarding as complete before navigating
       await completeOnboarding();
-      router.replace('/auth/signup');
+      
+      if (mountedRef.current) {
+        router.replace('/auth/signup');
+      }
     } catch (error) {
       console.error('[Location] Error skipping:', error);
     }
@@ -139,13 +173,13 @@ export default function LocationScreen() {
         <TouchableOpacity 
           style={[
             styles.button,
-            loading && { opacity: 0.6 }
+            (loading || permissionStatus === 'requesting') && { opacity: 0.6 }
           ]}
           onPress={handleEnableLocation}
-          disabled={loading}
+          disabled={loading || permissionStatus === 'requesting'}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'Requesting...' : 'Enable Location'}
+            {permissionStatus === 'requesting' ? 'Requesting Permission...' : 'Enable Location'}
           </Text>
         </TouchableOpacity>
         

@@ -161,11 +161,9 @@ export default function PendingMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <React.Fragment key={`shared-interest-${index}-${interest}`}>
-                  <View style={styles.interestChip}>
-                    <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-                </React.Fragment>
+                <View key={`shared-interest-${pendingMatch.id}-${index}-${interest}`} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
               ))}
             </View>
           </View>

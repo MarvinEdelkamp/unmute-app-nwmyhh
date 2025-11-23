@@ -158,11 +158,9 @@ export default function ReadyMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {readyMatch.sharedInterests.map((interest, index) => (
-                <React.Fragment key={`shared-interest-${index}-${interest}`}>
-                  <View style={styles.interestChip}>
-                    <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-                </React.Fragment>
+                <View key={`shared-interest-${readyMatch.id}-${index}-${interest}`} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
               ))}
             </View>
           </View>
@@ -191,22 +189,21 @@ export default function ReadyMatchScreen() {
             <Text style={styles.coordinationLabel}>Help them find you (optional)</Text>
             
             {PRESET_MESSAGES.map((message, index) => (
-              <React.Fragment key={`preset-${index}-${message}`}>
-                <TouchableOpacity
-                  style={[
-                    styles.presetButton,
-                    selectedPreset === message && styles.presetButtonSelected
-                  ]}
-                  onPress={() => handlePresetPress(message)}
-                >
-                  <Text style={[
-                    styles.presetText,
-                    selectedPreset === message && styles.presetTextSelected
-                  ]}>
-                    {message}
-                  </Text>
-                </TouchableOpacity>
-              </React.Fragment>
+              <TouchableOpacity
+                key={`preset-${index}-${message}`}
+                style={[
+                  styles.presetButton,
+                  selectedPreset === message && styles.presetButtonSelected
+                ]}
+                onPress={() => handlePresetPress(message)}
+              >
+                <Text style={[
+                  styles.presetText,
+                  selectedPreset === message && styles.presetTextSelected
+                ]}>
+                  {message}
+                </Text>
+              </TouchableOpacity>
             ))}
 
             <TextInput

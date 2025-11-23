@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SessionProvider } from '@/contexts/SessionContext';
@@ -7,8 +7,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { WidgetProvider } from '@/contexts/WidgetContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Redirect } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { View, StyleSheet } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { setupErrorLogging } from '@/utils/errorLogger';
 import * as SplashScreen from 'expo-splash-screen';
@@ -31,7 +30,7 @@ function RootLayoutNav() {
     const maxLoadTime = setTimeout(() => {
       console.log('[App] Maximum load time reached, forcing app ready');
       setAppReady(true);
-    }, 3000); // 3 second maximum
+    }, 3000);
 
     return () => clearTimeout(maxLoadTime);
   }, []);
@@ -43,7 +42,6 @@ function RootLayoutNav() {
         console.log('[App] Auth loading state:', loading);
         console.log('[App] User:', user ? 'Logged in' : 'Not logged in');
         console.log('[App] Onboarding completed:', hasCompletedOnboarding);
-        console.log('[App] Platform:', Platform.OS);
         
         // Wait for auth to finish loading
         if (!loading) {
@@ -52,7 +50,6 @@ function RootLayoutNav() {
         }
       } catch (error) {
         console.error('[App] Error preparing app:', error);
-        // Always mark as ready even on error
         setAppReady(true);
       }
     }
@@ -71,7 +68,6 @@ function RootLayoutNav() {
           console.log('[App] Splash screen hidden successfully');
         } catch (error) {
           console.error('[App] Error hiding splash screen:', error);
-          // Mark as hidden anyway to prevent infinite loop
           setSplashHidden(true);
         }
       }
@@ -90,7 +86,7 @@ function RootLayoutNav() {
 
   // Determine initial route based on app state
   // Priority: onboarding -> signup -> interests -> main tabs
-  let initialRoute = '/(tabs)';
+  let initialRoute = null;
   
   // First check: Has user completed onboarding flow?
   if (!hasCompletedOnboarding) {
@@ -114,7 +110,7 @@ function RootLayoutNav() {
 
   return (
     <View style={{ flex: 1 }}>
-      {initialRoute !== '/(tabs)' && <Redirect href={initialRoute as any} />}
+      {initialRoute && <Redirect href={initialRoute as any} />}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />

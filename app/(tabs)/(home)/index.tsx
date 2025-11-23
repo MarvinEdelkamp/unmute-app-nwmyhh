@@ -395,9 +395,17 @@ export default function HomeScreen() {
 
           {isOpen && remainingTime > 0 && (
             <View style={styles.sessionInfo}>
-              <Text style={[styles.sessionTimer, { color: theme.textSecondary }]}>
-                Session ends at {formatEndTime(remainingTime)}
-              </Text>
+              <View style={styles.timerBadge}>
+                <IconSymbol 
+                  ios_icon_name="clock.fill" 
+                  android_material_icon_name="schedule" 
+                  size={16} 
+                  color={theme.primary} 
+                />
+                <Text style={[styles.sessionTimer, { color: theme.text }]}>
+                  Ends at {formatEndTime(remainingTime)}
+                </Text>
+              </View>
               <View style={styles.sessionActions}>
                 <TouchableOpacity onPress={() => {
                   hapticFeedback.light();
@@ -419,12 +427,10 @@ export default function HomeScreen() {
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <React.Fragment key={`interest-${index}-${interest}`}>
-                  <View style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
-                    <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
-                    <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
-                  </View>
-                </React.Fragment>
+                <View key={`interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
+                  <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
+                  <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
+                </View>
               ))}
             </View>
           </View>
@@ -532,8 +538,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   timerText: {
-    ...typography.heading,
-    fontWeight: '500',
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   visibilityText: {
     ...typography.caption,
@@ -542,11 +549,21 @@ const styles = StyleSheet.create({
   sessionInfo: {
     alignItems: 'center',
     marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   sessionTimer: {
-    ...typography.caption,
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: spacing.sm,
   },
   sessionActions: {
     flexDirection: 'row',
