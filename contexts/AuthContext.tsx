@@ -29,39 +29,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUser = async () => {
     try {
+      console.log('[AuthContext] Starting to load user data...');
       setLoading(true);
       
-      // Load user and onboarding status in parallel with timeout
-      const loadPromises = Promise.race([
-        Promise.all([
-          storage.getItem<User>('user'),
-          storage.getItem<boolean>('onboarded'),
-        ]),
-        // Timeout after 5 seconds
-        new Promise<[null, null]>((resolve) => 
-          setTimeout(() => {
-            console.warn('Storage load timeout, using defaults');
-            resolve([null, null]);
-          }, 5000)
-        ),
+      // Load user and onboarding status with a shorter timeout
+      const loadPromise = Promise.all([
+        storage.getItem<User>('user'),
+        storage.getItem<boolean>('onboarded'),
       ]);
 
-      const [userData, onboardedData] = await loadPromises;
+      const timeoutPromise = new Promise<[null, null]>((resolve) => 
+        setTimeout(() => {
+          console.warn('[AuthContext] Storage load timeout (2s), using defaults');
+          resolve([null, null]);
+        }, 2000)
+      );
+
+      const [userData, onboardedData] = await Promise.race([
+        loadPromise,
+        timeoutPromise,
+      ]);
       
       if (userData) {
         setUser(userData);
-        console.log('User loaded successfully:', userData.id);
+        console.log('[AuthContext] User loaded successfully:', userData.id);
+      } else {
+        console.log('[AuthContext] No user data found');
       }
       
       if (onboardedData) {
         setHasCompletedOnboarding(onboardedData);
-        console.log('Onboarding status loaded:', onboardedData);
+        console.log('[AuthContext] Onboarding status loaded:', onboardedData);
+      } else {
+        console.log('[AuthContext] No onboarding data found, defaulting to false');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_LOAD_USER');
-      console.error('Error loading user:', error);
+      console.error('[AuthContext] Error loading user:', error);
       // Don't throw - allow app to continue with no user
     } finally {
+      console.log('[AuthContext] Finished loading, setting loading to false');
       setLoading(false);
     }
   };
@@ -95,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(newUser);
-      console.log('User signed up successfully:', newUser.id);
+      console.log('[AuthContext] User signed up successfully:', newUser.id);
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_SIGNUP');
       throw error;
@@ -121,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(userData);
-      console.log('User signed in successfully:', userData.id);
+      console.log('[AuthContext] User signed in successfully:', userData.id);
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_SIGNIN');
       throw error;
@@ -140,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (success.every(s => s)) {
         setUser(null);
         setHasCompletedOnboarding(false);
-        console.log('User signed out successfully');
+        console.log('[AuthContext] User signed out successfully');
       } else {
         throw new Error('Failed to clear all user data');
       }
@@ -189,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(updatedUser);
-      console.log('User updated successfully:', updatedUser.id);
+      console.log('[AuthContext] User updated successfully:', updatedUser.id);
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_UPDATE_USER');
       throw error;
@@ -203,12 +210,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to save onboarding status');
       }
       setHasCompletedOnboarding(true);
-      console.log('Onboarding completed successfully');
+      console.log('[AuthContext] Onboarding completed successfully');
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_COMPLETE_ONBOARDING');
       throw error;
     }
   };
+
+  console.log('[AuthContext] Current state - loading:', loading, 'user:', user ? 'exists' : 'null', 'onboarded:', hasCompletedOnboarding);
 
   return (
     <AuthContext.Provider
@@ -232,7 +241,7 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     // Return safe defaults instead of throwing
-    console.warn('useAuth must be used within an AuthProvider, using defaults');
+    console.warn('[AuthContext] useAuth must be used within an AuthProvider, using defaults');
     return {
       user: null,
       loading: false,

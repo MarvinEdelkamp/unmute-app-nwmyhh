@@ -24,7 +24,17 @@ setupErrorLogging();
 function RootLayoutNav() {
   const { user, loading, hasCompletedOnboarding } = useAuth();
   const [appReady, setAppReady] = useState(false);
-  const [connectionError, setConnectionError] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
+
+  // Force app to be ready after maximum timeout
+  useEffect(() => {
+    const maxLoadTime = setTimeout(() => {
+      console.log('[App] Maximum load time reached, forcing app ready');
+      setAppReady(true);
+    }, 3000); // 3 second maximum
+
+    return () => clearTimeout(maxLoadTime);
+  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -37,71 +47,46 @@ function RootLayoutNav() {
         
         // Wait for auth to finish loading
         if (!loading) {
-          // Small delay to ensure smooth transition
-          await new Promise(resolve => setTimeout(resolve, 100));
-          console.log('[App] App ready, hiding splash screen');
+          console.log('[App] Auth loaded, marking app as ready');
           setAppReady(true);
-          setConnectionError(false);
         }
       } catch (error) {
         console.error('[App] Error preparing app:', error);
-        // Even if there's an error, mark as ready to show error boundary
+        // Always mark as ready even on error
         setAppReady(true);
-        setConnectionError(true);
       }
     }
 
     prepare();
-  }, [loading]);
+  }, [loading, user, hasCompletedOnboarding]);
 
-  const onLayoutRootView = useCallback(async () => {
-    if (appReady) {
-      try {
-        // Hide splash screen once app is ready
-        await SplashScreen.hideAsync();
-        console.log('[App] Splash screen hidden successfully');
-      } catch (error) {
-        console.error('[App] Error hiding splash screen:', error);
+  // Hide splash screen once app is ready
+  useEffect(() => {
+    async function hideSplash() {
+      if (appReady && !splashHidden) {
+        try {
+          console.log('[App] Hiding splash screen...');
+          await SplashScreen.hideAsync();
+          setSplashHidden(true);
+          console.log('[App] Splash screen hidden successfully');
+        } catch (error) {
+          console.error('[App] Error hiding splash screen:', error);
+          // Mark as hidden anyway to prevent infinite loop
+          setSplashHidden(true);
+        }
       }
     }
-  }, [appReady]);
 
-  const handleReload = useCallback(() => {
-    console.log('[App] Reloading app...');
-    // Reset state to trigger re-initialization
-    setAppReady(false);
-    setConnectionError(false);
-    setTimeout(() => {
-      setAppReady(true);
-    }, 100);
-  }, []);
+    hideSplash();
+  }, [appReady, splashHidden]);
 
-  // Show loading spinner while app is initializing
-  if (!appReady || loading) {
-    return (
-      <View 
-        style={styles.loadingContainer}
-        onLayout={onLayoutRootView}
-      >
-        <LoadingSpinner message="Loading Unmute..." fullScreen />
-      </View>
-    );
+  // Show nothing while loading (splash screen is visible)
+  if (!appReady) {
+    console.log('[App] App not ready yet, showing splash screen');
+    return null;
   }
 
-  // Show connection error screen if there's an issue
-  if (connectionError) {
-    return (
-      <View style={styles.errorContainer} onLayout={onLayoutRootView}>
-        <Text style={styles.errorTitle}>Connection Issue</Text>
-        <Text style={styles.errorMessage}>
-          Unable to connect to the app. Please check your internet connection and try again.
-        </Text>
-        <TouchableOpacity style={styles.reloadButton} onPress={handleReload}>
-          <Text style={styles.reloadButtonText}>Reload App</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  console.log('[App] App ready, rendering navigation');
 
   // Determine initial route based on app state
   let initialRoute = '/(tabs)';
@@ -120,7 +105,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1 }}>
       {initialRoute !== '/(tabs)' && <Redirect href={initialRoute as any} />}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -160,37 +145,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: lightColors.background,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: lightColors.background,
-    padding: 24,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: lightColors.text,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: lightColors.textSecondary,
-    marginBottom: 32,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  reloadButton: {
-    backgroundColor: lightColors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  reloadButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

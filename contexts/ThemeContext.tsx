@@ -27,14 +27,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const loadThemePreference = async () => {
     try {
-      const savedTheme = await AsyncStorage.getItem('themeMode');
+      console.log('[ThemeContext] Loading theme preference...');
+      
+      // Add timeout to prevent hanging
+      const loadPromise = AsyncStorage.getItem('themeMode');
+      const timeoutPromise = new Promise<null>((resolve) => 
+        setTimeout(() => {
+          console.warn('[ThemeContext] Theme load timeout, using default');
+          resolve(null);
+        }, 1000)
+      );
+
+      const savedTheme = await Promise.race([loadPromise, timeoutPromise]);
+      
       if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto')) {
         setThemeModeState(savedTheme as ThemeMode);
+        console.log('[ThemeContext] Theme loaded:', savedTheme);
+      } else {
+        console.log('[ThemeContext] No saved theme, using auto');
       }
     } catch (error) {
-      console.log('Error loading theme preference:', error);
+      console.log('[ThemeContext] Error loading theme preference:', error);
       // Use default 'auto' mode on error
     } finally {
+      console.log('[ThemeContext] Theme loading complete');
       setLoading(false);
     }
   };
@@ -43,8 +59,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem('themeMode', mode);
       setThemeModeState(mode);
+      console.log('[ThemeContext] Theme mode set to:', mode);
     } catch (error) {
-      console.log('Error saving theme preference:', error);
+      console.log('[ThemeContext] Error saving theme preference:', error);
       // Still update state even if save fails
       setThemeModeState(mode);
     }
@@ -56,23 +73,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const theme = isDark ? darkColors : lightColors;
 
-  // Provide default theme immediately to prevent undefined errors
-  if (loading) {
-    return (
-      <ThemeContext.Provider value={{ 
-        theme: lightColors, 
-        themeMode: 'auto', 
-        isDark: false, 
-        setThemeMode: () => {},
-        loading: true 
-      }}>
-        {children}
-      </ThemeContext.Provider>
-    );
-  }
-
+  // Don't wait for loading - provide theme immediately
   return (
-    <ThemeContext.Provider value={{ theme, themeMode, isDark, setThemeMode, loading }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      themeMode, 
+      isDark, 
+      setThemeMode,
+      loading 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -82,7 +91,7 @@ export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     // Return safe default instead of throwing
-    console.warn('useTheme must be used within a ThemeProvider, using default theme');
+    console.warn('[ThemeContext] useTheme must be used within a ThemeProvider, using default theme');
     return {
       theme: lightColors,
       themeMode: 'auto' as ThemeMode,
