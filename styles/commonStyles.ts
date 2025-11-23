@@ -1,20 +1,20 @@
 
 import { StyleSheet } from 'react-native';
 
-// Enhanced color system with dark mode support
+// Enhanced color system with dark mode support - NEW CALMING BLUE COLOR SCHEME
 export const lightColors = {
   background: '#FFFFFF',
   backgroundSecondary: '#F8F9FA',
   text: '#1A1A1A',
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
-  primary: '#4A9B94',
-  primaryLight: '#A8DDD8',
-  primaryDark: '#3A7B74',
-  secondary: '#E8F5F4',
+  primary: '#3B6B8C', // Darker, calming blue with slight teal influence
+  primaryLight: '#A8C5D9',
+  primaryDark: '#2A4F6C',
+  secondary: '#E8F1F5',
   accent: '#FFD93D',
   card: '#FFFFFF',
-  highlight: '#D4EEEC',
+  highlight: '#D4E4ED',
   error: '#E74C3C',
   errorLight: '#FADBD8',
   success: '#2ECC71',
@@ -34,13 +34,13 @@ export const darkColors = {
   text: '#FFFFFF',
   textSecondary: '#B0B0B0',
   textTertiary: '#808080',
-  primary: '#5FBDB5',
-  primaryLight: '#7FCFC9',
-  primaryDark: '#4A9B94',
-  secondary: '#2A3F3E',
+  primary: '#5A8FB0', // Lighter blue for dark mode
+  primaryLight: '#7FAFC9',
+  primaryDark: '#3B6B8C',
+  secondary: '#2A3F45',
   accent: '#FFD93D',
   card: '#1E1E1E',
-  highlight: '#2A4A48',
+  highlight: '#2A4A52',
   error: '#FF6B6B',
   errorLight: '#3D2626',
   success: '#51CF66',

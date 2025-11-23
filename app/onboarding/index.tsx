@@ -162,6 +162,17 @@ export default function OnboardingScreen() {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
+            <View style={styles.iconContainer}>
+              <View style={styles.iconCircle}>
+                <IconSymbol 
+                  ios_icon_name="arrow.triangle.2.circlepath" 
+                  android_material_icon_name="sync" 
+                  size={64} 
+                  color={colors.primary} 
+                />
+              </View>
+            </View>
+
             <Text style={styles.title}>How it works</Text>
             <Text style={styles.subtitle}>Three simple steps</Text>
 

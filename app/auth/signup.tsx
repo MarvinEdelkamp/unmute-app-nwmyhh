@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -11,14 +12,36 @@ import { validation, sanitize } from '@/utils/validation';
 import { errorHandler } from '@/utils/errorHandler';
 import { hapticFeedback } from '@/utils/haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { storage } from '@/utils/storage';
+import { User } from '@/types';
 
 export default function SignUpScreen() {
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
+  const { theme } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [isLogin, setIsLogin] = useState(false);
+
+  // Check if user already exists
+  useEffect(() => {
+    checkExistingUser();
+  }, []);
+
+  const checkExistingUser = async () => {
+    try {
+      const userData = await storage.getItem<User>('user');
+      if (userData) {
+        setIsLogin(true);
+        setEmail(userData.email);
+        console.log('[SignUp] Existing user found, switching to login mode');
+      }
+    } catch (error) {
+      console.error('[SignUp] Error checking existing user:', error);
+    }
+  };
 
   const handlePickImage = async () => {
     try {
@@ -43,9 +66,11 @@ export default function SignUpScreen() {
   const validateForm = (): boolean => {
     const newErrors: { name?: string; email?: string } = {};
 
-    const nameValidation = validation.name(name);
-    if (!nameValidation.valid) {
-      newErrors.name = nameValidation.error;
+    if (!isLogin) {
+      const nameValidation = validation.name(name);
+      if (!nameValidation.valid) {
+        newErrors.name = nameValidation.error;
+      }
     }
 
     const emailValidation = validation.email(email);
@@ -67,15 +92,20 @@ export default function SignUpScreen() {
       setLoading(true);
       hapticFeedback.medium();
       
-      await signUp(email, 'password123', name);
-      
-      hapticFeedback.success();
-      router.replace('/auth/interests');
+      if (isLogin) {
+        await signIn(email, 'password123');
+        hapticFeedback.success();
+        router.replace('/(tabs)/(home)/');
+      } else {
+        await signUp(email, 'password123', name);
+        hapticFeedback.success();
+        router.replace('/auth/interests');
+      }
     } catch (error) {
       hapticFeedback.error();
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create profile';
+      const errorMessage = error instanceof Error ? error.message : isLogin ? 'Failed to sign in' : 'Failed to create profile';
       errorHandler.showError(errorMessage);
-      console.error('Sign up error:', error);
+      console.error(isLogin ? 'Sign in error:' : 'Sign up error:', error);
     } finally {
       setLoading(false);
     }
@@ -95,11 +125,19 @@ export default function SignUpScreen() {
     }
   };
 
-  const isFormValid = name.trim().length > 0 && email.trim().length > 0 && email.includes('@');
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setErrors({});
+    hapticFeedback.light();
+  };
+
+  const isFormValid = isLogin 
+    ? email.trim().length > 0 && email.includes('@')
+    : name.trim().length > 0 && email.trim().length > 0 && email.includes('@');
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
@@ -108,76 +146,86 @@ export default function SignUpScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Create your profile</Text>
-        <Text style={styles.subtitle}>Just the basics</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          {isLogin ? 'Welcome back' : 'Create your profile'}
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          {isLogin ? 'Sign in to continue' : 'Just the basics'}
+        </Text>
 
         <View style={styles.form}>
-          <View style={styles.photoSection}>
-            <Text style={styles.label}>Photo (optional)</Text>
-            <TouchableOpacity 
-              style={styles.photoButton}
-              onPress={handlePickImage}
-            >
-              {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatarImage} />
-              ) : (
-                <IconSymbol 
-                  ios_icon_name="camera.fill" 
-                  android_material_icon_name="photo_camera" 
-                  size={36} 
-                  color={colors.textSecondary} 
-                />
-              )}
-            </TouchableOpacity>
-            <Text style={styles.photoNote}>
-              Shared only with matches when you both say yes
-            </Text>
-          </View>
+          {!isLogin && (
+            <>
+              <View style={styles.photoSection}>
+                <Text style={[styles.label, { color: theme.text }]}>Photo (optional)</Text>
+                <TouchableOpacity 
+                  style={[styles.photoButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+                  onPress={handlePickImage}
+                >
+                  {avatar ? (
+                    <Image source={{ uri: avatar }} style={styles.avatarImage} />
+                  ) : (
+                    <IconSymbol 
+                      ios_icon_name="camera.fill" 
+                      android_material_icon_name="photo_camera" 
+                      size={36} 
+                      color={theme.textSecondary} 
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text style={[styles.photoNote, { color: theme.textSecondary }]}>
+                  Shared only with matches when you both say yes
+                </Text>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: theme.text }]}>First name or nickname</Text>
+                <View style={[
+                  styles.inputWrapper,
+                  { backgroundColor: theme.card, borderColor: errors.name ? theme.error : theme.border },
+                  errors.name && { backgroundColor: theme.errorLight }
+                ]}>
+                  <IconSymbol 
+                    ios_icon_name="person.fill" 
+                    android_material_icon_name="person" 
+                    size={20} 
+                    color={errors.name ? theme.error : theme.textSecondary} 
+                  />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    placeholder="e.g. Sophie"
+                    placeholderTextColor={theme.textSecondary}
+                    value={name}
+                    onChangeText={handleNameChange}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
+                {errors.name && (
+                  <Text style={[styles.errorText, { color: theme.error }]}>{errors.name}</Text>
+                )}
+              </View>
+            </>
+          )}
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>First name or nickname</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Email address</Text>
             <View style={[
               styles.inputWrapper,
-              errors.name && styles.inputWrapperError
-            ]}>
-              <IconSymbol 
-                ios_icon_name="person.fill" 
-                android_material_icon_name="person" 
-                size={20} 
-                color={errors.name ? colors.error : colors.textSecondary} 
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Sophie"
-                placeholderTextColor={colors.textSecondary}
-                value={name}
-                onChangeText={handleNameChange}
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="next"
-              />
-            </View>
-            {errors.name && (
-              <Text style={styles.errorText}>{errors.name}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email address</Text>
-            <View style={[
-              styles.inputWrapper,
-              errors.email && styles.inputWrapperError
+              { backgroundColor: theme.card, borderColor: errors.email ? theme.error : theme.border },
+              errors.email && { backgroundColor: theme.errorLight }
             ]}>
               <IconSymbol 
                 ios_icon_name="envelope.fill" 
                 android_material_icon_name="email" 
                 size={20} 
-                color={errors.email ? colors.error : colors.textSecondary} 
+                color={errors.email ? theme.error : theme.textSecondary} 
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 placeholder="your@email.com"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={theme.textSecondary}
                 value={email}
                 onChangeText={handleEmailChange}
                 autoCapitalize="none"
@@ -188,28 +236,31 @@ export default function SignUpScreen() {
               />
             </View>
             {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
+              <Text style={[styles.errorText, { color: theme.error }]}>{errors.email}</Text>
             )}
-            {!errors.email && (
-              <Text style={styles.inputNote}>
+            {!errors.email && !isLogin && (
+              <Text style={[styles.inputNote, { color: theme.textSecondary }]}>
                 For account recovery only. Never shown to others
               </Text>
             )}
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              No bios, no follower counts. Unmute keeps profiles minimal so conversations stay real.
-            </Text>
-          </View>
+          {!isLogin && (
+            <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.primaryLight }]}>
+              <Text style={[styles.infoText, { color: theme.text }]}>
+                No bios, no follower counts. Unmute keeps profiles minimal so conversations stay real.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
         <TouchableOpacity 
           style={[
             styles.button,
-            isFormValid ? styles.buttonActive : styles.buttonDisabled
+            { backgroundColor: isFormValid ? theme.primary : theme.disabled },
+            isFormValid ? shadows.md : {},
           ]}
           onPress={handleContinue}
           disabled={!isFormValid || loading}
@@ -220,11 +271,23 @@ export default function SignUpScreen() {
           ) : (
             <Text style={[
               styles.buttonText,
-              isFormValid ? styles.buttonTextActive : styles.buttonTextDisabled
+              { color: isFormValid ? theme.card : theme.textTertiary }
             ]}>
-              Continue
+              {isLogin ? 'Sign In' : 'Continue'}
             </Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.linkButton}
+          onPress={toggleMode}
+        >
+          <Text style={[styles.linkText, { color: theme.textSecondary }]}>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <Text style={[styles.linkTextBold, { color: theme.primary }]}>
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -234,24 +297,21 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingBottom: 160,
+    paddingBottom: 200,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: colors.text,
     marginBottom: spacing.sm,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 17,
     fontWeight: '400',
-    color: colors.textSecondary,
     marginBottom: spacing.xxxl + spacing.lg,
   },
   form: {
@@ -263,18 +323,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
   },
   photoButton: {
     width: 110,
     height: 110,
     borderRadius: borderRadius.lg,
     borderWidth: 2,
-    borderColor: colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.card,
   },
   avatarImage: {
     width: '100%',
@@ -284,7 +341,6 @@ const styles = StyleSheet.create({
   photoNote: {
     fontSize: 14,
     fontWeight: '400',
-    color: colors.textSecondary,
     lineHeight: 20,
   },
   inputContainer: {
@@ -294,46 +350,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: colors.border,
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + spacing.xs,
-  },
-  inputWrapperError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorLight,
   },
   input: {
     flex: 1,
     fontSize: 16,
     fontWeight: '400',
-    color: colors.text,
   },
   inputNote: {
     fontSize: 14,
     fontWeight: '400',
-    color: colors.textSecondary,
     lineHeight: 20,
   },
   errorText: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.error,
     lineHeight: 20,
   },
   infoBox: {
-    backgroundColor: colors.secondary,
     padding: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.primaryLight,
   },
   infoText: {
     fontSize: 15,
     fontWeight: '400',
-    color: colors.text,
     lineHeight: 22,
   },
   bottomContainer: {
@@ -344,12 +388,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl + spacing.md,
-    backgroundColor: colors.background,
+    borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 8,
+    gap: spacing.md,
   },
   button: {
     width: '100%',
@@ -359,28 +404,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonActive: {
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonDisabled: {
-    backgroundColor: colors.disabled,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
-  buttonTextActive: {
-    color: '#FFFFFF',
+  linkButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
-  buttonTextDisabled: {
-    color: colors.textTertiary,
+  linkText: {
+    fontSize: 15,
+    fontWeight: '400',
+  },
+  linkTextBold: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -9,6 +9,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { ProgressRing } from '@/components/ProgressRing';
 import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { hapticFeedback } from '@/utils/haptics';
+import { storage } from '@/utils/storage';
+import { Match } from '@/types';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -84,6 +86,41 @@ export default function HomeScreen() {
     hapticFeedback.success();
   };
 
+  const handleDemoMatch = async () => {
+    if (!user) return;
+    
+    hapticFeedback.medium();
+    
+    const mockMatch: Match = {
+      id: Date.now().toString(),
+      sessionAId: 'demo-session-a',
+      sessionBId: 'demo-session-b',
+      userA: user,
+      userB: {
+        id: 'demo-user',
+        email: 'demo@example.com',
+        name: 'Alex',
+        interests: user.interests.slice(0, 2),
+        createdAt: new Date().toISOString(),
+      },
+      sharedInterests: user.interests.slice(0, 2),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const existingMatches = await storage.getItem<Match[]>('matches') || [];
+      const updatedMatches = [...existingMatches, mockMatch];
+      await storage.setItem('matches', updatedMatches);
+      
+      hapticFeedback.success();
+      router.push('/match/pending');
+    } catch (error) {
+      console.error('Error creating demo match:', error);
+      hapticFeedback.error();
+    }
+  };
+
   const pendingMatches = matches.filter(m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested');
   const readyMatches = matches.filter(m => m.status === 'both_ready');
 
@@ -122,7 +159,7 @@ export default function HomeScreen() {
 
   // Calculate progress for timer ring (0 to 1)
   const maxTime = 45 * 60; // 45 minutes in seconds
-  const progress = isOpen ? remainingTime / maxTime : 0;
+  const progress = isOpen && remainingTime > 0 ? remainingTime / maxTime : 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -139,20 +176,34 @@ export default function HomeScreen() {
             <Text style={[styles.location, { color: theme.textSecondary }]}>Munich</Text>
           </View>
         </View>
-        <TouchableOpacity 
-          onPress={() => {
-            hapticFeedback.light();
-            router.push('/(tabs)/settings');
-          }}
-          style={[styles.settingsButton, { backgroundColor: theme.card }, shadows.sm]}
-        >
-          <IconSymbol 
-            ios_icon_name="gearshape.fill" 
-            android_material_icon_name="settings" 
-            size={24} 
-            color={theme.text} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            onPress={handleDemoMatch}
+            style={[styles.demoButton, { backgroundColor: theme.card, borderColor: theme.primary }, shadows.sm]}
+          >
+            <IconSymbol 
+              ios_icon_name="sparkles" 
+              android_material_icon_name="auto_awesome" 
+              size={20} 
+              color={theme.primary} 
+            />
+            <Text style={[styles.demoButtonText, { color: theme.primary }]}>Demo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => {
+              hapticFeedback.light();
+              router.push('/(tabs)/settings');
+            }}
+            style={[styles.settingsButton, { backgroundColor: theme.card }, shadows.sm]}
+          >
+            <IconSymbol 
+              ios_icon_name="gearshape.fill" 
+              android_material_icon_name="settings" 
+              size={24} 
+              color={theme.text} 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -189,7 +240,7 @@ export default function HomeScreen() {
             )}
             
             {/* Progress ring around the circle */}
-            {isOpen && (
+            {isOpen && remainingTime > 0 && (
               <View style={styles.progressRingContainer}>
                 <ProgressRing
                   size={240}
@@ -219,7 +270,7 @@ export default function HomeScreen() {
                 <Text style={[styles.circleText, { color: isOpen ? theme.card : theme.textSecondary }]}>
                   {isOpen ? 'Open' : 'Closed'}
                 </Text>
-                {isOpen && (
+                {isOpen && remainingTime > 0 && (
                   <Text style={[styles.timerText, { color: theme.card }]}>
                     {formatTime(remainingTime)}
                   </Text>
@@ -234,7 +285,7 @@ export default function HomeScreen() {
             </Text>
           )}
 
-          {isOpen && (
+          {isOpen && remainingTime > 0 && (
             <View style={styles.sessionInfo}>
               <Text style={[styles.sessionTimer, { color: theme.textSecondary }]}>
                 Session ends at {formatEndTime(remainingTime)}
@@ -296,6 +347,23 @@ const styles = StyleSheet.create({
   },
   location: {
     ...typography.caption,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  demoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+  },
+  demoButtonText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   settingsButton: {
     padding: spacing.sm,
