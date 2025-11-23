@@ -190,182 +190,35 @@ export default function InterestsScreen() {
   }, [progressPercentage]);
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <ScrollView 
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={[styles.title, { color: theme.text }]}>What are you into?</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Choose at least 3 interests to find your people
-        </Text>
-
-        {/* Category selector */}
-        <View style={styles.categorySection}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScrollContent}
-          >
-            {interestCategories.map((category) => {
-              const isSelected = category.id === selectedCategory;
-              return (
-                <TouchableOpacity
-                  key={`category-${category.id}`}
-                  style={[
-                    styles.categoryChip,
-                    { 
-                      backgroundColor: isSelected ? theme.primary : theme.card,
-                      borderColor: isSelected ? theme.primary : theme.border,
-                    },
-                    shadows.sm,
-                  ]}
-                  onPress={() => {
-                    setSelectedCategory(category.id);
-                    hapticFeedback.light();
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      { color: isSelected ? theme.card : theme.text },
-                    ]}
-                  >
-                    {category.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Interests grid */}
-        <View style={styles.interestsGrid}>
-          {currentCategory.interests.map((interest, index) => {
-            const isSelected = selectedInterests.includes(interest);
-            return (
-              <TouchableOpacity
-                key={`interest-${currentCategory.id}-${interest}-${index}`}
-                style={[
-                  styles.interestCard,
-                  { 
-                    backgroundColor: theme.card,
-                    borderColor: isSelected ? theme.primary : theme.border,
-                    borderWidth: isSelected ? 2.5 : 1.5,
-                  },
-                  isSelected && { ...shadows.md },
-                  !isSelected && { ...shadows.sm },
-                ]}
-                onPress={() => toggleInterest(interest)}
-                activeOpacity={0.7}
-              >
-                {isSelected && (
-                  <View style={[styles.checkBadge, { backgroundColor: theme.primary }]}>
-                    <IconSymbol
-                      ios_icon_name="checkmark"
-                      android_material_icon_name="check"
-                      size={14}
-                      color={theme.card}
-                    />
-                  </View>
-                )}
-                <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
-                <Text
-                  style={[
-                    styles.interestText,
-                    { color: theme.text },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {interest}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Custom interest input */}
-        <View style={styles.customSection}>
-          <Text style={[styles.customTitle, { color: theme.text }]}>
-            Can&apos;t find what you&apos;re looking for?
-          </Text>
-          <View style={styles.customInputContainer}>
-            <TextInput
-              style={[
-                styles.customInput,
-                { 
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                  color: theme.text,
-                }
-              ]}
-              placeholder="Add your own interest"
-              placeholderTextColor={theme.textSecondary}
-              value={customInterest}
-              onChangeText={setCustomInterest}
-              onSubmitEditing={addCustomInterest}
-              returnKeyType="done"
-              maxLength={50}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
-            />
-            <TouchableOpacity
-              style={[
-                styles.addIconButton,
-                { backgroundColor: theme.primary },
-                shadows.sm,
-              ]}
-              onPress={addCustomInterest}
-            >
-              <IconSymbol
-                ios_icon_name="plus"
-                android_material_icon_name="add"
-                size={24}
-                color={theme.card}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Floating progress bar */}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Floating progress bar at the top */}
       {selectedInterests.length > 0 && (
-        <View style={[styles.floatingBar, { backgroundColor: theme.card, borderTopColor: theme.border }, shadows.lg]}>
-          <View style={styles.floatingBarContent}>
+        <View style={[styles.topProgressBar, { backgroundColor: theme.card, borderBottomColor: theme.border }, shadows.md]}>
+          <View style={styles.topProgressContent}>
             <View style={styles.progressInfo}>
               <IconSymbol
                 ios_icon_name="checkmark.circle.fill"
                 android_material_icon_name="check_circle"
-                size={24}
+                size={20}
                 color={canContinue ? theme.primary : theme.textSecondary}
               />
-              <Text style={[styles.progressText, { color: theme.text }]}>
-                {selectedInterests.length} {selectedInterests.length === 1 ? 'interest' : 'interests'} selected
+              <Text style={[styles.topProgressText, { color: theme.text }]}>
+                {selectedInterests.length} of 3 selected
               </Text>
             </View>
             
-            {!canContinue && (
-              <Text style={[styles.progressHint, { color: theme.textSecondary }]}>
-                Select {3 - selectedInterests.length} more to continue
+            {canContinue && (
+              <Text style={[styles.topProgressHint, { color: theme.primary }]}>
+                Ready to continue!
               </Text>
             )}
           </View>
           
           {/* Progress line */}
-          <View style={[styles.progressBarContainer, { backgroundColor: theme.border }]}>
+          <View style={[styles.topProgressBarContainer, { backgroundColor: theme.border }]}>
             <Animated.View
               style={[
-                styles.progressBarFill,
+                styles.topProgressBarFill,
                 {
                   backgroundColor: theme.primary,
                   width: progressAnim.interpolate({
@@ -376,41 +229,241 @@ export default function InterestsScreen() {
               ]}
             />
           </View>
-
-          {canContinue && (
-            <TouchableOpacity 
-              style={[
-                styles.continueButton,
-                { backgroundColor: theme.primary },
-                shadows.md,
-              ]}
-              onPress={handleContinue}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <LoadingSpinner size="small" />
-              ) : (
-                <Text style={[styles.continueButtonText, { color: theme.card }]}>
-                  Continue
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
         </View>
       )}
-    </KeyboardAvoidingView>
+
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            selectedInterests.length > 0 && styles.scrollContentWithProgress
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.title, { color: theme.text }]}>What are you into?</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Choose at least 3 interests to find your people
+          </Text>
+
+          {/* Category selector */}
+          <View style={styles.categorySection}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScrollContent}
+            >
+              {interestCategories.map((category) => {
+                const isSelected = category.id === selectedCategory;
+                return (
+                  <TouchableOpacity
+                    key={`category-${category.id}`}
+                    style={[
+                      styles.categoryChip,
+                      { 
+                        backgroundColor: isSelected ? theme.primary : theme.card,
+                        borderColor: isSelected ? theme.primary : theme.border,
+                      },
+                      shadows.sm,
+                    ]}
+                    onPress={() => {
+                      setSelectedCategory(category.id);
+                      hapticFeedback.light();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: isSelected ? theme.card : theme.text },
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Interests grid */}
+          <View style={styles.interestsGrid}>
+            {currentCategory.interests.map((interest, index) => {
+              const isSelected = selectedInterests.includes(interest);
+              return (
+                <TouchableOpacity
+                  key={`interest-${currentCategory.id}-${interest}-${index}`}
+                  style={[
+                    styles.interestCard,
+                    { 
+                      backgroundColor: theme.card,
+                      borderColor: isSelected ? theme.primary : theme.border,
+                      borderWidth: isSelected ? 2.5 : 1.5,
+                    },
+                    isSelected && { ...shadows.md },
+                    !isSelected && { ...shadows.sm },
+                  ]}
+                  onPress={() => toggleInterest(interest)}
+                  activeOpacity={0.7}
+                >
+                  {isSelected && (
+                    <View style={[styles.checkBadge, { backgroundColor: theme.primary }]}>
+                      <IconSymbol
+                        ios_icon_name="checkmark"
+                        android_material_icon_name="check"
+                        size={14}
+                        color={theme.card}
+                      />
+                    </View>
+                  )}
+                  <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
+                  <Text
+                    style={[
+                      styles.interestText,
+                      { color: theme.text },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {interest}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Custom interest input */}
+          <View style={styles.customSection}>
+            <Text style={[styles.customTitle, { color: theme.text }]}>
+              Can&apos;t find what you&apos;re looking for?
+            </Text>
+            <View style={styles.customInputContainer}>
+              <TextInput
+                style={[
+                  styles.customInput,
+                  { 
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                    color: theme.text,
+                  }
+                ]}
+                placeholder="Add your own interest"
+                placeholderTextColor={theme.textSecondary}
+                value={customInterest}
+                onChangeText={setCustomInterest}
+                onSubmitEditing={addCustomInterest}
+                returnKeyType="done"
+                maxLength={50}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.addIconButton,
+                  { backgroundColor: theme.primary },
+                  shadows.sm,
+                ]}
+                onPress={addCustomInterest}
+              >
+                <IconSymbol
+                  ios_icon_name="plus"
+                  android_material_icon_name="add"
+                  size={24}
+                  color={theme.card}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Bottom continue button */}
+      {canContinue && (
+        <View style={[styles.bottomBar, { backgroundColor: theme.card, borderTopColor: theme.border }, shadows.lg]}>
+          <TouchableOpacity 
+            style={[
+              styles.continueButton,
+              { backgroundColor: theme.primary },
+              shadows.md,
+            ]}
+            onPress={handleContinue}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <LoadingSpinner size="small" />
+            ) : (
+              <Text style={[styles.continueButtonText, { color: theme.card }]}>
+                Continue
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? spacing.massive : 60,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  topProgressBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: Platform.OS === 'android' ? spacing.massive + spacing.sm : 60,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    zIndex: 100,
+  },
+  topProgressContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  progressInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  topProgressText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  topProgressHint: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  topProgressBarContainer: {
+    height: 3,
+    borderRadius: borderRadius.xs,
+    overflow: 'hidden',
+  },
+  topProgressBarFill: {
+    height: '100%',
+    borderRadius: borderRadius.xs,
   },
   scrollContent: {
+    paddingTop: Platform.OS === 'android' ? spacing.massive : 60,
     paddingHorizontal: spacing.xxl,
     paddingBottom: 200,
+  },
+  scrollContentWithProgress: {
+    paddingTop: Platform.OS === 'android' ? 140 : 140,
   },
   title: {
     ...typography.title,
@@ -500,7 +553,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  floatingBar: {
+  bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -509,32 +562,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
     borderTopWidth: 1,
-  },
-  floatingBarContent: {
-    marginBottom: spacing.md,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  progressText: {
-    ...typography.bodyBold,
-  },
-  progressHint: {
-    ...typography.caption,
-    marginLeft: spacing.xxxl,
-  },
-  progressBarContainer: {
-    height: 4,
-    borderRadius: borderRadius.xs,
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: borderRadius.xs,
   },
   continueButton: {
     width: '100%',

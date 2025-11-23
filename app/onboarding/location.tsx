@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 56,
     paddingVertical: spacing.lg + spacing.xs,
-    paddingHorizontal: spacing.xxxl,
+    paddingHorizontal: spacing.xxxl + spacing.lg,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',

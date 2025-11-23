@@ -11,6 +11,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function PendingMatchScreen() {
   const { matches, respondToMatch } = useSession();
   const { user } = useAuth();
+  const [isResponding, setIsResponding] = React.useState(false);
 
   const pendingMatch = matches.find(
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
@@ -22,28 +23,50 @@ export default function PendingMatchScreen() {
         (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
         (pendingMatch.status === 'user_b_interested' && pendingMatch.userB.id === user?.id);
       
-      if (isCurrentUserInterested) {
-        router.replace('/match/confirm');
+      if (isCurrentUserInterested && !isResponding) {
+        setTimeout(() => {
+          router.replace('/match/confirm');
+        }, 100);
       }
     }
-  }, [pendingMatch]);
+  }, [pendingMatch?.status]);
 
   if (!pendingMatch) {
-    router.back();
+    setTimeout(() => {
+      router.back();
+    }, 100);
     return null;
   }
 
   const handleInterested = async () => {
-    await respondToMatch(pendingMatch.id, true);
+    if (isResponding) return;
+    setIsResponding(true);
+    try {
+      await respondToMatch(pendingMatch.id, true);
+    } catch (error) {
+      console.error('Error responding to match:', error);
+      setIsResponding(false);
+    }
   };
 
   const handleNotNow = async () => {
-    await respondToMatch(pendingMatch.id, false);
-    router.back();
+    if (isResponding) return;
+    setIsResponding(true);
+    try {
+      await respondToMatch(pendingMatch.id, false);
+      setTimeout(() => {
+        router.back();
+      }, 100);
+    } catch (error) {
+      console.error('Error declining match:', error);
+      setIsResponding(false);
+    }
   };
 
   const handleClose = () => {
-    router.back();
+    if (!isResponding) {
+      router.back();
+    }
   };
 
   return (
@@ -67,7 +90,7 @@ export default function PendingMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <View key={index} style={styles.interestChip}>
+                <View key={`shared-interest-${index}`} style={styles.interestChip}>
                   <Text style={styles.interestText}>{interest}</Text>
                 </View>
               ))}
@@ -87,8 +110,9 @@ export default function PendingMatchScreen() {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[buttonStyles.primary, styles.button]}
+              style={[buttonStyles.primary, styles.button, isResponding && { opacity: 0.6 }]}
               onPress={handleInterested}
+              disabled={isResponding}
             >
               <Text style={[buttonStyles.text]}>
                 See if you&apos;re both ready
@@ -96,15 +120,20 @@ export default function PendingMatchScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[buttonStyles.secondary, styles.button]}
+              style={[buttonStyles.secondary, styles.button, isResponding && { opacity: 0.6 }]}
               onPress={handleNotNow}
+              disabled={isResponding}
             >
               <Text style={buttonStyles.textSecondary}>Not now</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+        <TouchableOpacity 
+          onPress={handleClose} 
+          style={styles.closeButton}
+          disabled={isResponding}
+        >
           <IconSymbol 
             ios_icon_name="xmark" 
             android_material_icon_name="close" 

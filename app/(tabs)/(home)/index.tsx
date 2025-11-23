@@ -18,6 +18,7 @@ export default function HomeScreen() {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const glowAnim = React.useRef(new Animated.Value(0)).current;
+  const [isCreatingDemo, setIsCreatingDemo] = React.useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -87,8 +88,9 @@ export default function HomeScreen() {
   };
 
   const handleDemoMatch = async () => {
-    if (!user) return;
+    if (!user || isCreatingDemo) return;
     
+    setIsCreatingDemo(true);
     hapticFeedback.medium();
     
     // Create a realistic demo match
@@ -116,13 +118,15 @@ export default function HomeScreen() {
       
       hapticFeedback.success();
       
-      // Navigate to pending match screen
+      // Navigate to pending match screen after a short delay
       setTimeout(() => {
+        setIsCreatingDemo(false);
         router.push('/match/pending');
-      }, 100);
+      }, 300);
     } catch (error) {
       console.error('Error creating demo match:', error);
       hapticFeedback.error();
+      setIsCreatingDemo(false);
     }
   };
 
@@ -130,14 +134,14 @@ export default function HomeScreen() {
   const readyMatches = matches.filter(m => m.status === 'both_ready');
 
   useEffect(() => {
-    if (pendingMatches.length > 0) {
+    if (pendingMatches.length > 0 && !isCreatingDemo) {
       hapticFeedback.success();
       router.push('/match/pending');
-    } else if (readyMatches.length > 0) {
+    } else if (readyMatches.length > 0 && !isCreatingDemo) {
       hapticFeedback.success();
       router.push('/match/ready');
     }
-  }, [matches]);
+  }, [matches.length]);
 
   const getInterestEmoji = (interest: string) => {
     const emojiMap: { [key: string]: string } = {
@@ -184,7 +188,13 @@ export default function HomeScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity 
             onPress={handleDemoMatch}
-            style={[styles.demoButton, { backgroundColor: theme.card, borderColor: theme.primary }, shadows.sm]}
+            disabled={isCreatingDemo}
+            style={[
+              styles.demoButton, 
+              { backgroundColor: theme.card, borderColor: theme.primary }, 
+              shadows.sm,
+              isCreatingDemo && { opacity: 0.6 }
+            ]}
           >
             <IconSymbol 
               ios_icon_name="sparkles" 
