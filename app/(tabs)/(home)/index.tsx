@@ -14,12 +14,13 @@ import { Match } from '@/types';
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { isOpen, remainingTime, openSession, closeSession, extendSession, matches } = useSession();
+  const { isOpen, remainingTime, openSession, closeSession, extendSession, matches, refreshMatches } = useSession();
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const glowAnim = React.useRef(new Animated.Value(0)).current;
   const [isCreatingDemo, setIsCreatingDemo] = React.useState(false);
-  const hasNavigatedRef = React.useRef(false);
+  const navigationLockRef = React.useRef(false);
+  const lastMatchCountRef = React.useRef(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,11 +90,11 @@ export default function HomeScreen() {
   };
 
   const handleDemoMatch = async () => {
-    if (!user || isCreatingDemo) return;
+    if (!user || isCreatingDemo || navigationLockRef.current) return;
     
     console.log('Demo button pressed - creating mock match');
     setIsCreatingDemo(true);
-    hasNavigatedRef.current = true;
+    navigationLockRef.current = true;
     hapticFeedback.medium();
     
     // Create a realistic demo match
@@ -120,23 +121,28 @@ export default function HomeScreen() {
       await storage.setItem('matches', updatedMatches);
       
       console.log('Demo match created successfully:', mockMatch.id);
+      
+      // Refresh matches in context
+      await refreshMatches();
+      
       hapticFeedback.success();
       
       // Navigate to pending match screen after a short delay
       setTimeout(() => {
         console.log('Navigating to pending match screen');
         router.push('/match/pending');
-        // Reset the flag after navigation
+        
+        // Release the lock after navigation completes
         setTimeout(() => {
           setIsCreatingDemo(false);
-          hasNavigatedRef.current = false;
-        }, 500);
-      }, 200);
+          navigationLockRef.current = false;
+        }, 1000);
+      }, 300);
     } catch (error) {
       console.error('Error creating demo match:', error);
       hapticFeedback.error();
       setIsCreatingDemo(false);
-      hasNavigatedRef.current = false;
+      navigationLockRef.current = false;
     }
   };
 
@@ -144,31 +150,40 @@ export default function HomeScreen() {
   const readyMatches = matches.filter(m => m.status === 'both_ready');
 
   // Auto-navigate to match screens when matches are available
-  // But only if we're not already creating a demo match
+  // But only if we're not in the middle of creating a demo or already navigating
   useEffect(() => {
-    if (isCreatingDemo || hasNavigatedRef.current) {
-      console.log('Skipping auto-navigation - demo in progress');
+    // Skip if navigation is locked or if match count hasn't changed
+    if (navigationLockRef.current || matches.length === lastMatchCountRef.current) {
       return;
     }
 
+    lastMatchCountRef.current = matches.length;
+
+    // Only auto-navigate if there are new matches
     if (pendingMatches.length > 0) {
       console.log('Auto-navigating to pending match');
-      hasNavigatedRef.current = true;
+      navigationLockRef.current = true;
       hapticFeedback.success();
-      router.push('/match/pending');
+      
       setTimeout(() => {
-        hasNavigatedRef.current = false;
-      }, 1000);
+        router.push('/match/pending');
+        setTimeout(() => {
+          navigationLockRef.current = false;
+        }, 1000);
+      }, 100);
     } else if (readyMatches.length > 0) {
       console.log('Auto-navigating to ready match');
-      hasNavigatedRef.current = true;
+      navigationLockRef.current = true;
       hapticFeedback.success();
-      router.push('/match/ready');
+      
       setTimeout(() => {
-        hasNavigatedRef.current = false;
-      }, 1000);
+        router.push('/match/ready');
+        setTimeout(() => {
+          navigationLockRef.current = false;
+        }, 1000);
+      }, 100);
     }
-  }, [matches.length, isCreatingDemo]);
+  }, [matches.length, pendingMatches.length, readyMatches.length]);
 
   const getInterestEmoji = (interest: string) => {
     const emojiMap: { [key: string]: string } = {
@@ -215,12 +230,12 @@ export default function HomeScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity 
             onPress={handleDemoMatch}
-            disabled={isCreatingDemo}
+            disabled={isCreatingDemo || navigationLockRef.current}
             style={[
               styles.demoButton, 
               { backgroundColor: theme.card, borderColor: theme.primary }, 
               shadows.sm,
-              isCreatingDemo && { opacity: 0.6 }
+              (isCreatingDemo || navigationLockRef.current) && { opacity: 0.6 }
             ]}
           >
             <IconSymbol 

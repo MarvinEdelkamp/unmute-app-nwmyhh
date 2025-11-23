@@ -13,22 +13,42 @@ export default function PendingMatchScreen() {
   const { user } = useAuth();
   const [isResponding, setIsResponding] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
+  const mountedRef = React.useRef(false);
 
   const pendingMatch = matches.find(
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
+  // Mark as mounted after initial render
+  useEffect(() => {
+    console.log('Pending match screen mounted');
+    mountedRef.current = true;
+    
+    return () => {
+      console.log('Pending match screen unmounted');
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Check if current user has already responded
   useEffect(() => {
-    if (!pendingMatch) {
-      console.log('No pending match found, closing screen');
-      setVisible(false);
-      setTimeout(() => {
-        router.back();
-      }, 100);
+    // Don't do anything until we're fully mounted
+    if (!mountedRef.current) {
       return;
     }
 
+    if (!pendingMatch) {
+      console.log('No pending match found, closing screen');
+      setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => {
+          router.back();
+        }, 200);
+      }, 500);
+      return;
+    }
+
+    // Check if user already responded and should move to confirm screen
     if (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested') {
       const isCurrentUserInterested = 
         (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
@@ -38,7 +58,7 @@ export default function PendingMatchScreen() {
         console.log('Current user already responded, navigating to confirm');
         setTimeout(() => {
           router.replace('/match/confirm');
-        }, 300);
+        }, 500);
       }
     }
   }, [pendingMatch?.status, pendingMatch?.id]);
@@ -56,8 +76,10 @@ export default function PendingMatchScreen() {
       // Navigate to confirm screen after a short delay
       setTimeout(() => {
         router.replace('/match/confirm');
-        setIsResponding(false);
-      }, 300);
+        setTimeout(() => {
+          setIsResponding(false);
+        }, 500);
+      }, 400);
     } catch (error) {
       console.error('Error responding to match:', error);
       setIsResponding(false);
@@ -77,7 +99,9 @@ export default function PendingMatchScreen() {
       setVisible(false);
       setTimeout(() => {
         router.back();
-        setIsResponding(false);
+        setTimeout(() => {
+          setIsResponding(false);
+        }, 300);
       }, 200);
     } catch (error) {
       console.error('Error declining match:', error);
@@ -91,7 +115,7 @@ export default function PendingMatchScreen() {
       setVisible(false);
       setTimeout(() => {
         router.back();
-      }, 100);
+      }, 200);
     }
   };
 

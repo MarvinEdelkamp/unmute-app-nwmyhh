@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -20,11 +20,40 @@ export default function ReadyMatchScreen() {
   const { user } = useAuth();
   const [customMessage, setCustomMessage] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [visible, setVisible] = useState(true);
+  const mountedRef = React.useRef(false);
 
   const readyMatch = matches.find(m => m.status === 'both_ready');
 
+  // Mark as mounted after initial render
+  useEffect(() => {
+    console.log('Ready match screen mounted');
+    mountedRef.current = true;
+    
+    return () => {
+      console.log('Ready match screen unmounted');
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Don't do anything until we're fully mounted
+    if (!mountedRef.current) {
+      return;
+    }
+
+    if (!readyMatch) {
+      console.log('No ready match found, closing screen');
+      setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => {
+          router.back();
+        }, 200);
+      }, 500);
+    }
+  }, [readyMatch]);
+
   if (!readyMatch) {
-    router.back();
     return null;
   }
 
@@ -33,13 +62,19 @@ export default function ReadyMatchScreen() {
   const handleSayHi = () => {
     console.log('User confirmed they will say hi');
     closeMatch(readyMatch.id);
-    router.back();
+    setVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 200);
   };
 
   const handleChangedMind = () => {
     console.log('User changed their mind');
     closeMatch(readyMatch.id);
-    router.back();
+    setVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 200);
   };
 
   const handleBlockReport = () => {
@@ -47,7 +82,11 @@ export default function ReadyMatchScreen() {
   };
 
   const handleClose = () => {
-    router.back();
+    console.log('User closed ready match screen');
+    setVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 200);
   };
 
   const handlePresetPress = (message: string) => {
@@ -61,7 +100,7 @@ export default function ReadyMatchScreen() {
 
   return (
     <Modal
-      visible={true}
+      visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
@@ -111,7 +150,7 @@ export default function ReadyMatchScreen() {
             <Text style={styles.sectionLabel}>You both love:</Text>
             <View style={styles.interestsRow}>
               {readyMatch.sharedInterests.map((interest, index) => (
-                <View key={index} style={styles.interestChip}>
+                <View key={`interest-${index}`} style={styles.interestChip}>
                   <Text style={styles.interestText}>{interest}</Text>
                 </View>
               ))}
@@ -143,7 +182,7 @@ export default function ReadyMatchScreen() {
             
             {PRESET_MESSAGES.map((message, index) => (
               <TouchableOpacity
-                key={index}
+                key={`preset-${index}`}
                 style={[
                   styles.presetButton,
                   selectedPreset === message && styles.presetButtonSelected

@@ -13,18 +13,37 @@ export default function ConfirmMatchScreen() {
   const { user } = useAuth();
   const [visible, setVisible] = React.useState(true);
   const [isConfirming, setIsConfirming] = React.useState(false);
+  const mountedRef = React.useRef(false);
 
   const readyMatch = matches.find(
     m => m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
+  // Mark as mounted after initial render
   useEffect(() => {
+    console.log('Confirm match screen mounted');
+    mountedRef.current = true;
+    
+    return () => {
+      console.log('Confirm match screen unmounted');
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Don't do anything until we're fully mounted
+    if (!mountedRef.current) {
+      return;
+    }
+
     if (!readyMatch) {
       console.log('No match waiting for confirmation, going back');
-      setVisible(false);
       setTimeout(() => {
-        router.back();
-      }, 100);
+        setVisible(false);
+        setTimeout(() => {
+          router.back();
+        }, 200);
+      }, 500);
       return;
     }
 
@@ -34,7 +53,7 @@ export default function ConfirmMatchScreen() {
       console.log('Both users ready, navigating to ready screen');
       setTimeout(() => {
         router.replace('/match/ready');
-      }, 300);
+      }, 500);
     }
   }, [readyMatch?.id, matches]);
 
@@ -50,8 +69,10 @@ export default function ConfirmMatchScreen() {
       
       setTimeout(() => {
         router.replace('/match/ready');
-        setIsConfirming(false);
-      }, 300);
+        setTimeout(() => {
+          setIsConfirming(false);
+        }, 500);
+      }, 400);
     } catch (error) {
       console.error('Error confirming match:', error);
       setIsConfirming(false);
@@ -59,19 +80,23 @@ export default function ConfirmMatchScreen() {
   };
 
   const handleNotInterested = () => {
+    if (isConfirming) return;
+    
     console.log('User not interested in confirming');
     setVisible(false);
     setTimeout(() => {
       router.back();
-    }, 100);
+    }, 200);
   };
 
   const handleClose = () => {
+    if (isConfirming) return;
+    
     console.log('User closed confirm screen');
     setVisible(false);
     setTimeout(() => {
       router.back();
-    }, 100);
+    }, 200);
   };
 
   if (!readyMatch) {
@@ -88,7 +113,11 @@ export default function ConfirmMatchScreen() {
       <View style={[commonStyles.container, styles.container]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Confirm</Text>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <TouchableOpacity 
+            onPress={handleClose} 
+            style={styles.closeButton}
+            disabled={isConfirming}
+          >
             <IconSymbol 
               ios_icon_name="xmark" 
               android_material_icon_name="close" 
