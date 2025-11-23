@@ -1,14 +1,14 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HowItWorksScreen() {
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={styles.container}>
       <TouchableOpacity 
         style={styles.backButton}
         onPress={() => router.back()}
@@ -89,10 +89,10 @@ export default function HowItWorksScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
-          style={[buttonStyles.primary, styles.button]}
+          style={styles.button}
           onPress={() => router.push('/onboarding/safety')}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>Continue</Text>
+          <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
         
         <View style={styles.pagination}>
@@ -107,12 +107,14 @@ export default function HowItWorksScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   backButton: {
     position: 'absolute',
-    top: 60,
-    left: 24,
+    top: Platform.OS === 'android' ? layout.screenPaddingTop + spacing.sm : layout.screenPaddingTop + spacing.sm,
+    left: layout.screenPaddingHorizontal,
     zIndex: 10,
     width: 40,
     height: 40,
@@ -120,98 +122,107 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 20,
-    paddingBottom: 160,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: layout.contentPaddingBottom,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    ...typography.title,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.textSecondary,
-    marginBottom: 40,
+    marginBottom: spacing.xxxl,
   },
   stepsContainer: {
-    marginBottom: 32,
+    marginBottom: spacing.xxl,
   },
   step: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
+    gap: spacing.lg,
+    marginBottom: spacing.xxl,
   },
   stepLeft: {
     alignItems: 'center',
   },
   stepNumber: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepNumberText: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: colors.card,
   },
   stepLine: {
     width: 2,
     flex: 1,
     backgroundColor: colors.border,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   stepContent: {
     flex: 1,
-    paddingTop: 4,
+    paddingTop: spacing.xs,
   },
   stepTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.heading,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   stepDescription: {
-    fontSize: 15,
+    ...typography.body,
     color: colors.textSecondary,
-    lineHeight: 22,
   },
   infoBox: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.highlight,
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
     alignItems: 'flex-start',
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    ...typography.caption,
     color: colors.text,
-    lineHeight: 20,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
+    padding: layout.screenPaddingHorizontal,
+    paddingBottom: spacing.xxxl,
     backgroundColor: colors.background,
     alignItems: 'center',
-    gap: 16,
+    gap: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    ...typography.bodyBold,
+    color: colors.card,
   },
   pagination: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     alignItems: 'center',
   },
   dot: {

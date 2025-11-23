@@ -1,14 +1,14 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function SafetyScreen() {
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={styles.container}>
       <TouchableOpacity 
         style={styles.backButton}
         onPress={() => router.back()}
@@ -30,7 +30,7 @@ export default function SafetyScreen() {
             <IconSymbol 
               ios_icon_name="shield.fill" 
               android_material_icon_name="shield" 
-              size={64} 
+              size={56} 
               color={colors.primary} 
             />
           </View>
@@ -95,10 +95,10 @@ export default function SafetyScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
-          style={[buttonStyles.primary, styles.button]}
+          style={styles.button}
           onPress={() => router.push('/onboarding/location')}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>Get Started</Text>
+          <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
         
         <View style={styles.pagination}>
@@ -113,12 +113,14 @@ export default function SafetyScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   backButton: {
     position: 'absolute',
-    top: 60,
-    left: 24,
+    top: Platform.OS === 'android' ? layout.screenPaddingTop + spacing.sm : layout.screenPaddingTop + spacing.sm,
+    left: layout.screenPaddingHorizontal,
     zIndex: 10,
     width: 40,
     height: 40,
@@ -126,46 +128,46 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 20,
-    paddingBottom: 160,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: layout.contentPaddingBottom,
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 40,
+    marginBottom: spacing.xxl,
   },
   iconCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    ...typography.title,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xxxl,
   },
   safetyContainer: {
     width: '100%',
-    gap: 20,
+    gap: spacing.xl,
   },
   safetyItem: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.lg,
     alignItems: 'flex-start',
   },
   iconCircleSmall: {
@@ -178,35 +180,45 @@ const styles = StyleSheet.create({
   },
   safetyContent: {
     flex: 1,
-    paddingTop: 4,
+    paddingTop: spacing.xs,
   },
   safetyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.heading,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   safetyDescription: {
-    fontSize: 15,
+    ...typography.body,
     color: colors.textSecondary,
-    lineHeight: 22,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
+    padding: layout.screenPaddingHorizontal,
+    paddingBottom: spacing.xxxl,
     backgroundColor: colors.background,
     alignItems: 'center',
-    gap: 16,
+    gap: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    ...typography.bodyBold,
+    color: colors.card,
   },
   pagination: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
     alignItems: 'center',
   },
   dot: {

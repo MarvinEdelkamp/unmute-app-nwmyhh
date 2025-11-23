@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Image, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -47,7 +47,7 @@ export default function SignUpScreen() {
     try {
       setLoading(true);
       await signUp(email, 'password123', name);
-      router.replace('/auth/interests');
+      router.push('/auth/interests');
     } catch (error) {
       Alert.alert('Error', 'Failed to create profile. Please try again.');
       console.log('Sign up error:', error);
@@ -59,7 +59,7 @@ export default function SignUpScreen() {
   const isFormValid = name.trim().length > 0 && email.trim().length > 0 && email.includes('@');
 
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={styles.container}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -148,14 +148,13 @@ export default function SignUpScreen() {
       <View style={styles.bottomContainer}>
         <TouchableOpacity 
           style={[
-            buttonStyles.primary, 
             styles.button,
-            (!isFormValid || loading) && styles.buttonDisabled
+            isFormValid ? styles.buttonActive : styles.buttonDisabled
           ]}
           onPress={handleContinue}
           disabled={!isFormValid || loading}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>
+          <Text style={styles.buttonText}>
             {loading ? 'Creating...' : 'Continue'}
           </Text>
         </TouchableOpacity>
@@ -166,39 +165,39 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 20,
-    paddingBottom: 140,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: layout.contentPaddingBottom,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    ...typography.title,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.textSecondary,
-    marginBottom: 40,
+    marginBottom: spacing.xxxl,
   },
   form: {
-    gap: 32,
+    gap: spacing.xxl,
   },
   photoSection: {
-    gap: 12,
+    gap: spacing.md,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.bodyBold,
     color: colors.text,
   },
   photoButton: {
     width: 100,
     height: 100,
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     borderWidth: 2,
     borderColor: colors.border,
     borderStyle: 'dashed',
@@ -209,59 +208,70 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 14,
+    borderRadius: borderRadius.md,
   },
   photoNote: {
-    fontSize: 13,
+    ...typography.caption,
     color: colors.textSecondary,
-    lineHeight: 18,
   },
   inputContainer: {
-    gap: 8,
+    gap: spacing.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.card,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
   },
   inputNote: {
-    fontSize: 13,
+    ...typography.caption,
     color: colors.textSecondary,
-    lineHeight: 18,
   },
   infoBox: {
     backgroundColor: colors.highlight,
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
   },
   infoText: {
-    fontSize: 14,
+    ...typography.caption,
     color: colors.text,
-    lineHeight: 20,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
+    padding: layout.screenPaddingHorizontal,
+    paddingBottom: spacing.xxxl,
     backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonActive: {
+    backgroundColor: colors.primary,
   },
   buttonDisabled: {
-    opacity: 0.4,
+    backgroundColor: colors.disabled,
+  },
+  buttonText: {
+    ...typography.bodyBold,
+    color: colors.card,
   },
 });

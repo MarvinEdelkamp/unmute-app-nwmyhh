@@ -57,7 +57,7 @@ export const darkColors = {
 // Default to light colors (will be overridden by theme context)
 export const colors = lightColors;
 
-// Standardized spacing scale
+// Standardized spacing scale - CONSISTENT ACROSS ALL SCREENS
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -68,6 +68,15 @@ export const spacing = {
   xxxl: 32,
   huge: 40,
   massive: 48,
+};
+
+// Screen layout constants - USE THESE FOR CONSISTENCY
+export const layout = {
+  screenPaddingTop: 60,
+  screenPaddingHorizontal: 24,
+  contentPaddingBottom: 140,
+  headerHeight: 60,
+  bottomButtonHeight: 100,
 };
 
 // Typography scale
@@ -135,6 +144,9 @@ export const buttonStyles = StyleSheet.create({
     justifyContent: 'center',
     boxShadow: `0px 4px 12px ${colors.shadow}`,
     elevation: 3,
+  },
+  primaryActive: {
+    backgroundColor: colors.primary,
   },
   primaryPressed: {
     backgroundColor: colors.primaryDark,

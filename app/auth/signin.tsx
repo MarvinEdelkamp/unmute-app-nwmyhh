@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,22 +31,20 @@ export default function SignInScreen() {
   };
 
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={styles.container}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[commonStyles.title, styles.title]}>Welcome back</Text>
-        <Text style={[commonStyles.textSecondary, styles.subtitle]}>
-          Sign in to continue
-        </Text>
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Sign in to continue</Text>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={[commonStyles.input, styles.input]}
+              style={styles.input}
               placeholder="your@email.com"
               placeholderTextColor={colors.textSecondary}
               value={email}
@@ -60,7 +58,7 @@ export default function SignInScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <TextInput
-              style={[commonStyles.input, styles.input]}
+              style={styles.input}
               placeholder="Enter your password"
               placeholderTextColor={colors.textSecondary}
               value={password}
@@ -73,13 +71,13 @@ export default function SignInScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View style={styles.bottomContainer}>
         <TouchableOpacity 
-          style={[buttonStyles.primary, styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSignIn}
           disabled={loading}
         >
-          <Text style={[buttonStyles.text, { color: colors.card }]}>
+          <Text style={styles.buttonText}>
             {loading ? 'Signing in...' : 'Sign in'}
           </Text>
         </TouchableOpacity>
@@ -99,45 +97,70 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 180,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: layout.contentPaddingBottom,
   },
   title: {
+    ...typography.title,
+    color: colors.text,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xxxl,
   },
   form: {
-    gap: 20,
+    gap: spacing.xl,
   },
   inputContainer: {
-    gap: 8,
+    gap: spacing.sm,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.bodyBold,
     color: colors.text,
   },
   input: {
     backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    ...typography.body,
+    color: colors.text,
   },
-  buttonContainer: {
+  bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
+    padding: layout.screenPaddingHorizontal,
+    paddingBottom: spacing.xxxl,
     backgroundColor: colors.background,
-    gap: 16,
+    gap: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    ...typography.bodyBold,
+    color: colors.card,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -146,11 +169,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    fontSize: 14,
+    ...typography.caption,
     color: colors.textSecondary,
   },
   linkTextBold: {
-    fontWeight: '600',
+    ...typography.captionBold,
     color: colors.primary,
   },
 });
