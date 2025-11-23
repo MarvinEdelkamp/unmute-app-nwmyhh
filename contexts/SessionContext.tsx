@@ -14,6 +14,7 @@ interface SessionContextType {
   closeSession: () => Promise<void>;
   extendSession: () => Promise<void>;
   respondToMatch: (matchId: string, interested: boolean) => Promise<void>;
+  confirmMatch: (matchId: string) => Promise<void>;
   closeMatch: (matchId: string) => Promise<void>;
 }
 
@@ -265,6 +266,26 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const confirmMatch = async (matchId: string) => {
+    try {
+      const matchIndex = matches.findIndex(m => m.id === matchId);
+      if (matchIndex === -1) {
+        return;
+      }
+
+      const match = matches[matchIndex];
+      const updatedMatch = { ...match, status: 'both_ready' as const };
+      const updatedMatches = [...matches];
+      updatedMatches[matchIndex] = updatedMatch;
+
+      setMatches(updatedMatches);
+      await AsyncStorage.setItem('matches', JSON.stringify(updatedMatches));
+    } catch (error) {
+      console.log('Error confirming match:', error);
+      throw error;
+    }
+  };
+
   const closeMatch = async (matchId: string) => {
     try {
       const updatedMatches = matches.filter(m => m.id !== matchId);
@@ -287,6 +308,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         closeSession,
         extendSession,
         respondToMatch,
+        confirmMatch,
         closeMatch,
       }}
     >

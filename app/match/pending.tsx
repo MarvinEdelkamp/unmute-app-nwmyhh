@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -15,6 +15,18 @@ export default function PendingMatchScreen() {
   const pendingMatch = matches.find(
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
+
+  useEffect(() => {
+    if (pendingMatch && (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested')) {
+      const isCurrentUserInterested = 
+        (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
+        (pendingMatch.status === 'user_b_interested' && pendingMatch.userB.id === user?.id);
+      
+      if (isCurrentUserInterested) {
+        router.replace('/match/confirm');
+      }
+    }
+  }, [pendingMatch]);
 
   if (!pendingMatch) {
     router.back();
