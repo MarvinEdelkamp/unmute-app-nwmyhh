@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
+import { IconSymbol } from '@/components/IconSymbol';
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
@@ -43,30 +44,46 @@ export default function SignInScreen() {
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-            />
+            <View style={styles.inputWrapper}>
+              <IconSymbol 
+                ios_icon_name="envelope.fill" 
+                android_material_icon_name="email" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="your@email.com"
+                placeholderTextColor={colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.inputWrapper}>
+              <IconSymbol 
+                ios_icon_name="lock.fill" 
+                android_material_icon_name="lock" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor={colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -99,43 +116,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   scrollContent: {
+    paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: layout.contentPaddingBottom,
+    paddingBottom: 180,
   },
   title: {
-    ...typography.title,
+    fontSize: 32,
+    fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: 17,
+    fontWeight: '400',
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxxl + spacing.lg,
   },
   form: {
-    gap: spacing.xl,
+    gap: spacing.xxl,
   },
   inputContainer: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   label: {
-    ...typography.bodyBold,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    ...typography.body,
+    paddingVertical: spacing.md + spacing.xs,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
     color: colors.text,
   },
   bottomContainer: {
@@ -143,37 +170,51 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: layout.screenPaddingHorizontal,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl + spacing.md,
     backgroundColor: colors.background,
-    gap: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    gap: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 8,
   },
   button: {
     width: '100%',
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg + spacing.xs,
+    borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    ...typography.bodyBold,
+    fontSize: 17,
+    fontWeight: '600',
     color: colors.card,
+    letterSpacing: 0.2,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   linkButton: {
     alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
   linkText: {
-    ...typography.caption,
+    fontSize: 15,
+    fontWeight: '400',
     color: colors.textSecondary,
   },
   linkTextBold: {
-    ...typography.captionBold,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.primary,
   },
 });

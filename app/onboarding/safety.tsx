@@ -30,7 +30,7 @@ export default function SafetyScreen() {
             <IconSymbol 
               ios_icon_name="shield.fill" 
               android_material_icon_name="shield" 
-              size={56} 
+              size={64} 
               color={colors.primary} 
             />
           </View>
@@ -45,7 +45,7 @@ export default function SafetyScreen() {
               <IconSymbol 
                 ios_icon_name="eye.fill" 
                 android_material_icon_name="visibility" 
-                size={24} 
+                size={28} 
                 color={colors.primary} 
               />
             </View>
@@ -62,7 +62,7 @@ export default function SafetyScreen() {
               <IconSymbol 
                 ios_icon_name="clock.fill" 
                 android_material_icon_name="schedule" 
-                size={24} 
+                size={28} 
                 color={colors.primary} 
               />
             </View>
@@ -79,7 +79,7 @@ export default function SafetyScreen() {
               <IconSymbol 
                 ios_icon_name="shield.fill" 
                 android_material_icon_name="shield" 
-                size={24} 
+                size={28} 
                 color={colors.primary} 
               />
             </View>
@@ -115,11 +115,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? layout.screenPaddingTop + spacing.sm : layout.screenPaddingTop + spacing.sm,
+    top: Platform.OS === 'android' ? 48 : 60,
     left: layout.screenPaddingHorizontal,
     zIndex: 10,
     width: 40,
@@ -128,42 +127,54 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   scrollContent: {
+    paddingTop: Platform.OS === 'android' ? 108 : 120,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: layout.contentPaddingBottom,
+    paddingBottom: 180,
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xxxl,
   },
   iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
   },
   title: {
-    ...typography.title,
+    fontSize: 28,
+    fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    letterSpacing: -0.5,
+    paddingHorizontal: spacing.lg,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: 17,
+    fontWeight: '400',
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxxl + spacing.lg,
   },
   safetyContainer: {
     width: '100%',
-    gap: spacing.xl,
+    gap: spacing.xxl + spacing.xs,
   },
   safetyItem: {
     flexDirection: 'row',
@@ -171,63 +182,85 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   iconCircleSmall: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   safetyContent: {
     flex: 1,
     paddingTop: spacing.xs,
   },
   safetyTitle: {
-    ...typography.heading,
+    fontSize: 18,
+    fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    letterSpacing: -0.2,
   },
   safetyDescription: {
-    ...typography.body,
+    fontSize: 16,
+    fontWeight: '400',
     color: colors.textSecondary,
+    lineHeight: 24,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: layout.screenPaddingHorizontal,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl + spacing.md,
     backgroundColor: colors.background,
     alignItems: 'center',
     gap: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 8,
   },
   button: {
     width: '100%',
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg + spacing.xs,
+    borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    ...typography.bodyBold,
+    fontSize: 17,
+    fontWeight: '600',
     color: colors.card,
+    letterSpacing: 0.2,
   },
   pagination: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
     alignItems: 'center',
+    marginTop: spacing.xs,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.border,
   },
   dotActive: {
+    width: 28,
     backgroundColor: colors.primary,
   },
 });

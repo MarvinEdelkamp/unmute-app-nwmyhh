@@ -81,7 +81,7 @@ export default function SignUpScreen() {
                 <IconSymbol 
                   ios_icon_name="camera.fill" 
                   android_material_icon_name="photo_camera" 
-                  size={32} 
+                  size={36} 
                   color={colors.textSecondary} 
                 />
               )}
@@ -154,7 +154,10 @@ export default function SignUpScreen() {
           onPress={handleContinue}
           disabled={!isFormValid || loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[
+            styles.buttonText,
+            !isFormValid && styles.buttonTextDisabled
+          ]}>
             {loading ? 'Creating...' : 'Continue'}
           </Text>
         </TouchableOpacity>
@@ -167,36 +170,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? layout.screenPaddingTop : layout.screenPaddingTop,
   },
   scrollContent: {
+    paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: layout.contentPaddingBottom,
+    paddingBottom: 160,
   },
   title: {
-    ...typography.title,
+    fontSize: 32,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: spacing.sm,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: 17,
+    fontWeight: '400',
     color: colors.textSecondary,
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxxl + spacing.lg,
   },
   form: {
-    gap: spacing.xxl,
+    gap: spacing.xxl + spacing.xs,
   },
   photoSection: {
     gap: spacing.md,
   },
   label: {
-    ...typography.bodyBold,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
   },
   photoButton: {
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 110,
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     borderColor: colors.border,
@@ -211,11 +217,13 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   photoNote: {
-    ...typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: colors.textSecondary,
+    lineHeight: 20,
   },
   inputContainer: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -226,52 +234,73 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + spacing.xs,
   },
   input: {
     flex: 1,
-    ...typography.body,
+    fontSize: 16,
+    fontWeight: '400',
     color: colors.text,
   },
   inputNote: {
-    ...typography.caption,
+    fontSize: 14,
+    fontWeight: '400',
     color: colors.textSecondary,
+    lineHeight: 20,
   },
   infoBox: {
-    backgroundColor: colors.highlight,
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.secondary,
+    padding: spacing.lg + spacing.xs,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
   },
   infoText: {
-    ...typography.caption,
+    fontSize: 15,
+    fontWeight: '400',
     color: colors.text,
+    lineHeight: 22,
   },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: layout.screenPaddingHorizontal,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl + spacing.md,
     backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 8,
   },
   button: {
     width: '100%',
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg + spacing.xs,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonActive: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     backgroundColor: colors.disabled,
   },
   buttonText: {
-    ...typography.bodyBold,
+    fontSize: 17,
+    fontWeight: '600',
     color: colors.card,
+    letterSpacing: 0.2,
+  },
+  buttonTextDisabled: {
+    color: colors.textTertiary,
   },
 });
