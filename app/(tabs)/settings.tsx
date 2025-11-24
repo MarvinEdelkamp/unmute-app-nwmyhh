@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Settings } from '@/types';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const [settings, setSettings] = useState<Settings>({
     defaultOpenTime: 45,
     blockedUsers: [],
@@ -81,7 +83,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -92,58 +94,61 @@ export default function SettingsScreen() {
               ios_icon_name="chevron.left" 
               android_material_icon_name="arrow_back" 
               size={24} 
-              color={colors.text} 
+              color={theme.primaryDark} 
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={[styles.headerTitle, { color: theme.primaryDark }]}>Settings</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Profile</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
             <View style={styles.profileInfo}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
+              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                <Text style={[styles.avatarText, { color: theme.surface }]}>
                   {user?.name.charAt(0).toUpperCase()}
                 </Text>
               </View>
               <View style={styles.profileText}>
-                <Text style={styles.profileName}>{user?.name}</Text>
-                <Text style={styles.profileEmail}>{user?.email}</Text>
+                <Text style={[styles.profileName, { color: theme.primaryDark }]}>{user?.name}</Text>
+                <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
               </View>
             </View>
             <TouchableOpacity 
-              style={styles.editButton}
+              style={[styles.editButton, { borderTopColor: theme.border }]}
               onPress={() => router.push('/auth/interests')}
             >
-              <Text style={styles.editButtonText}>Edit interests</Text>
+              <Text style={[styles.editButtonText, { color: theme.primary }]}>Edit interests</Text>
               <IconSymbol 
                 ios_icon_name="chevron.right" 
                 android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.textSecondary} 
+                size={18} 
+                color={theme.primary} 
               />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Default session time</Text>
-          <View style={styles.card}>
-            {[30, 45, 60].map((time) => (
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Default session time</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
+            {[30, 45, 60].map((time, index) => (
               <TouchableOpacity
                 key={time}
-                style={styles.timeOption}
+                style={[
+                  styles.timeOption,
+                  index < 2 && { borderBottomColor: theme.border }
+                ]}
                 onPress={() => handleTimeChange(time as 30 | 45 | 60)}
               >
-                <Text style={styles.timeText}>{time} minutes</Text>
+                <Text style={[styles.timeText, { color: theme.text }]}>{time} minutes</Text>
                 {settings.defaultOpenTime === time && (
                   <IconSymbol 
                     ios_icon_name="checkmark.circle.fill" 
                     android_material_icon_name="check_circle" 
-                    size={24} 
-                    color={colors.primary} 
+                    size={22} 
+                    color={theme.primary} 
                   />
                 )}
               </TouchableOpacity>
@@ -152,30 +157,30 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Safety</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Safety</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
             <TouchableOpacity style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
                 <IconSymbol 
                   ios_icon_name="hand.raised.fill" 
                   android_material_icon_name="block" 
                   size={20} 
-                  color={colors.textSecondary} 
+                  color={theme.primaryDark} 
                 />
-                <Text style={styles.menuItemText}>Blocked users</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Blocked users</Text>
               </View>
               <View style={styles.menuItemRight}>
-                <Text style={styles.menuItemBadge}>{settings.blockedUsers.length}</Text>
+                <Text style={[styles.menuItemBadge, { color: theme.textSecondary }]}>{settings.blockedUsers.length}</Text>
                 <IconSymbol 
                   ios_icon_name="chevron.right" 
                   android_material_icon_name="chevron_right" 
-                  size={20} 
-                  color={colors.textSecondary} 
+                  size={18} 
+                  color={theme.textSecondary} 
                 />
               </View>
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <TouchableOpacity style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
@@ -183,23 +188,23 @@ export default function SettingsScreen() {
                   ios_icon_name="exclamationmark.bubble.fill" 
                   android_material_icon_name="report_problem" 
                   size={20} 
-                  color={colors.textSecondary} 
+                  color={theme.primaryDark} 
                 />
-                <Text style={styles.menuItemText}>Report a problem</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Report a problem</Text>
               </View>
               <IconSymbol 
                 ios_icon_name="chevron.right" 
                 android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.textSecondary} 
+                size={18} 
+                color={theme.textSecondary} 
               />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Account</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={handleSignOut}
@@ -209,19 +214,19 @@ export default function SettingsScreen() {
                   ios_icon_name="rectangle.portrait.and.arrow.right" 
                   android_material_icon_name="logout" 
                   size={20} 
-                  color={colors.textSecondary} 
+                  color={theme.primaryDark} 
                 />
-                <Text style={styles.menuItemText}>Sign out</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Sign out</Text>
               </View>
               <IconSymbol 
                 ios_icon_name="chevron.right" 
                 android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.textSecondary} 
+                size={18} 
+                color={theme.textSecondary} 
               />
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <TouchableOpacity 
               style={styles.menuItem}
@@ -232,23 +237,23 @@ export default function SettingsScreen() {
                   ios_icon_name="trash.fill" 
                   android_material_icon_name="delete" 
                   size={20} 
-                  color={colors.error} 
+                  color={theme.error} 
                 />
-                <Text style={[styles.menuItemText, { color: colors.error }]}>
+                <Text style={[styles.menuItemText, { color: theme.error }]}>
                   Delete account & data
                 </Text>
               </View>
               <IconSymbol 
                 ios_icon_name="chevron.right" 
                 android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.error} 
+                size={18} 
+                color={theme.error} 
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.version}>Unmute v1.0.0</Text>
+        <Text style={[styles.version, { color: theme.textSecondary }]}>Unmute v1.0.0</Text>
       </ScrollView>
     </View>
   );
@@ -256,7 +261,8 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? spacing.massive : 60,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -265,122 +271,107 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.h2,
   },
   section: {
-    marginBottom: 24,
-    paddingHorizontal: 24,
+    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 14,
+    ...typography.caption,
     fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
   },
   profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.card,
+    fontSize: 22,
+    fontWeight: '600',
   },
   profileText: {
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+    ...typography.h2,
+    fontSize: 17,
+    marginBottom: spacing.xs,
   },
   profileEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   editButtonText: {
-    fontSize: 16,
-    color: colors.primary,
+    ...typography.body,
     fontWeight: '500',
   },
   timeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   timeText: {
-    fontSize: 16,
-    color: colors.text,
+    ...typography.body,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: spacing.lg,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   menuItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   menuItemText: {
-    fontSize: 16,
-    color: colors.text,
+    ...typography.body,
   },
   menuItemBadge: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
     fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 48,
+    marginLeft: spacing.massive,
   },
   version: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    ...typography.small,
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
 });

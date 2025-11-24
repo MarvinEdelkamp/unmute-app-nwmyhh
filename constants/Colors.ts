@@ -1,4 +1,31 @@
-const tintColorLight = "#0a7ea4";
+
+// Unmute Premium Design System - Color Tokens
+
+// Primary brand colors
+export const unmuteColors = {
+  // Main accent (Unmute teal)
+  primary: '#4A9B8E',
+  primaryDark: '#244354',
+  
+  // Backgrounds
+  bgDefault: '#F6F7FA',
+  surface: '#FFFFFF',
+  
+  // Text colors
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  
+  // Borders
+  borderSubtle: '#E5E7EB',
+  
+  // Status colors
+  error: '#E53935',
+  success: '#10B981',
+  warning: '#F59E0B',
+};
+
+// Legacy exports for backwards compatibility
+const tintColorLight = unmuteColors.primary;
 const tintColorDark = "#fff";
 
 export const zincColors = {
@@ -17,16 +44,16 @@ export const zincColors = {
 
 export const appleBlue = "#007AFF";
 export const appleRed = "#FF3B30";
-
 export const borderColor = "#A1A1AA80";
 export const appleGreen = "#34C759";
+
 export const Colors = {
   light: {
-    text: "#11181C",
-    background: "#fff",
+    text: unmuteColors.textPrimary,
+    background: unmuteColors.bgDefault,
     tint: tintColorLight,
-    icon: "#687076",
-    tabIconDefault: "#687076",
+    icon: unmuteColors.textSecondary,
+    tabIconDefault: unmuteColors.textSecondary,
     tabIconSelected: tintColorLight,
   },
   dark: {

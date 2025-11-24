@@ -2,15 +2,17 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { commonStyles, buttonStyles, spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSession } from '@/contexts/SessionContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function PendingMatchScreen() {
   const { matches, respondToMatch } = useSession();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [isResponding, setIsResponding] = React.useState(false);
   const [visible, setVisible] = React.useState(true);
   const mountedRef = React.useRef(false);
@@ -20,7 +22,6 @@ export default function PendingMatchScreen() {
     m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
-  // Mark as mounted after initial render
   useEffect(() => {
     console.log('[PendingMatch] Screen mounted');
     mountedRef.current = true;
@@ -32,9 +33,7 @@ export default function PendingMatchScreen() {
     };
   }, []);
 
-  // Check if current user has already responded
   useEffect(() => {
-    // Don't do anything until we're fully mounted
     if (!mountedRef.current || hasRespondedRef.current) {
       return;
     }
@@ -52,7 +51,6 @@ export default function PendingMatchScreen() {
       return;
     }
 
-    // Check if user already responded and should move to confirm screen
     if (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested') {
       const isCurrentUserInterested = 
         (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
@@ -81,7 +79,6 @@ export default function PendingMatchScreen() {
       await respondToMatch(pendingMatch.id, true);
       console.log('[PendingMatch] Response saved, navigating to confirm');
       
-      // Navigate to confirm screen after a short delay
       setTimeout(() => {
         if (mountedRef.current) {
           router.replace('/match/confirm');
@@ -147,69 +144,92 @@ export default function PendingMatchScreen() {
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={[commonStyles.container, styles.container]}>
+      <View style={[commonStyles.container, styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
-          <View style={styles.dragHandle} />
+          <View style={[styles.dragHandle, { backgroundColor: theme.border }]} />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>
+          <View style={[styles.iconContainer, { backgroundColor: theme.highlight }, shadows.md]}>
+            <IconSymbol 
+              ios_icon_name="person.2.fill" 
+              android_material_icon_name="people" 
+              size={40} 
+              color={theme.primary} 
+            />
+          </View>
+
+          <Text style={[styles.title, { color: theme.primaryDark }]}>
             Someone here shares your interests
           </Text>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>You both love:</Text>
+            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>You both love</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <View key={`shared-interest-${pendingMatch.id}-${index}-${interest}`} style={styles.interestChip}>
-                  <Text style={styles.interestText}>{interest}</Text>
+                <View key={`shared-interest-${pendingMatch.id}-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.highlight, borderColor: theme.primary }]}>
+                  <Text style={[styles.interestText, { color: theme.primary }]}>{interest}</Text>
                 </View>
               ))}
             </View>
           </View>
 
           <View style={styles.locationSection}>
-            <Text style={styles.locationLabel}>Approximate area:</Text>
-            <Text style={styles.locationText}>English Garden</Text>
+            <Text style={[styles.locationLabel, { color: theme.textSecondary }]}>Approximate area</Text>
+            <View style={styles.locationRow}>
+              <IconSymbol 
+                ios_icon_name="location.fill" 
+                android_material_icon_name="location_on" 
+                size={16} 
+                color={theme.primary} 
+              />
+              <Text style={[styles.locationText, { color: theme.text }]}>English Garden</Text>
+            </View>
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
+          <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.border }]}>
+            <IconSymbol 
+              ios_icon_name="info.circle.fill" 
+              android_material_icon_name="info" 
+              size={20} 
+              color={theme.primary} 
+            />
+            <Text style={[styles.infoText, { color: theme.text }]}>
               If you both agree, you&apos;ll see each other&apos;s profile and can say hi in person
             </Text>
           </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[buttonStyles.primary, styles.button, isResponding && { opacity: 0.6 }]}
+              style={[buttonStyles.primary, styles.button, { backgroundColor: theme.primary }, shadows.md, isResponding && { opacity: 0.6 }]}
               onPress={handleInterested}
               disabled={isResponding}
             >
-              <Text style={[buttonStyles.text]}>
-                See if you&apos;re both ready
+              <Text style={[buttonStyles.text, { color: theme.surface }]}>
+                I&apos;m interested
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[buttonStyles.secondary, styles.button, isResponding && { opacity: 0.6 }]}
+              style={[buttonStyles.secondary, styles.button, { backgroundColor: theme.surface, borderColor: theme.border }, isResponding && { opacity: 0.6 }]}
               onPress={handleNotNow}
               disabled={isResponding}
             >
-              <Text style={buttonStyles.textSecondary}>Not now</Text>
+              <Text style={[buttonStyles.textSecondary, { color: theme.text }]}>Not now</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <TouchableOpacity 
           onPress={handleClose} 
-          style={styles.closeButton}
+          style={[styles.closeButton, { backgroundColor: theme.surface }, shadows.sm]}
           disabled={isResponding}
         >
           <IconSymbol 
             ios_icon_name="xmark" 
             android_material_icon_name="close" 
-            size={20} 
-            color={colors.text} 
+            size={18} 
+            color={theme.primaryDark} 
           />
         </TouchableOpacity>
       </View>
@@ -219,84 +239,93 @@ export default function PendingMatchScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 20,
+    paddingTop: spacing.xl,
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   dragHandle: {
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xl,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.xxl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 32,
+    ...typography.h1,
+    fontSize: 26,
+    marginBottom: spacing.xxxl,
     textAlign: 'center',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   sectionLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 12,
+    ...typography.caption,
+    marginBottom: spacing.md,
   },
   interestsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   interestChip: {
-    backgroundColor: colors.highlight,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1.5,
   },
   interestText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
+    ...typography.body,
+    fontWeight: '600',
   },
   locationSection: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   locationLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
+    ...typography.caption,
+    marginBottom: spacing.xs,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   locationText: {
-    fontSize: 16,
-    color: colors.text,
+    ...typography.body,
     fontWeight: '600',
   },
   infoBox: {
-    backgroundColor: colors.secondary,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 32,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xxxl,
+    alignItems: 'flex-start',
+    borderWidth: 1,
   },
   infoText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    textAlign: 'center',
+    flex: 1,
+    ...typography.body,
+    fontSize: 15,
+    lineHeight: 21,
   },
   buttonContainer: {
-    gap: 12,
-    marginBottom: 24,
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
   },
   button: {
     width: '100%',
@@ -304,14 +333,11 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 60,
-    right: 24,
+    right: spacing.xxl,
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0px 2px 4px ${colors.shadow}`,
-    elevation: 2,
   },
 });

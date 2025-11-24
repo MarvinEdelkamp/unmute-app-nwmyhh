@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSession } from '@/contexts/SessionContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -35,18 +36,16 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Log timer updates
   useEffect(() => {
     console.log('[Home] Timer update - isOpen:', isOpen, 'remainingTime:', remainingTime);
   }, [isOpen, remainingTime]);
 
   useEffect(() => {
     if (isOpen) {
-      // Subtle breathing animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(scaleAnim, {
-            toValue: 1.015,
+            toValue: 1.01,
             duration: 3000,
             useNativeDriver: true,
           }),
@@ -58,7 +57,6 @@ export default function HomeScreen() {
         ])
       ).start();
 
-      // Subtle glow animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
@@ -119,7 +117,6 @@ export default function HomeScreen() {
     hasNavigatedRef.current = false;
     hapticFeedback.medium();
     
-    // Create a realistic demo match
     const mockMatch: Match = {
       id: `demo-${Date.now()}`,
       sessionAId: 'demo-session-a',
@@ -144,19 +141,16 @@ export default function HomeScreen() {
       
       console.log('[Home] Demo match created successfully:', mockMatch.id);
       
-      // Refresh matches in context
       await refreshMatches();
       
       hapticFeedback.success();
       
-      // Navigate to pending match screen after a short delay
       setTimeout(() => {
         if (!hasNavigatedRef.current && mountedRef.current) {
           console.log('[Home] Navigating to pending match screen from demo button');
           hasNavigatedRef.current = true;
           router.push('/match/pending');
           
-          // Release the lock after navigation completes
           setTimeout(() => {
             if (mountedRef.current) {
               setIsCreatingDemo(false);
@@ -177,22 +171,17 @@ export default function HomeScreen() {
   const pendingMatches = matches.filter(m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested');
   const readyMatches = matches.filter(m => m.status === 'both_ready');
 
-  // Auto-navigate to match screens when matches are available
-  // But only if we're not in the middle of creating a demo or already navigating
   useEffect(() => {
     if (!mountedRef.current) return;
     
-    // Create a unique identifier for the current match state
     const matchStateId = `${pendingMatches.length}-${readyMatches.length}-${matches.map(m => m.id).join(',')}`;
     
-    // Skip if navigation is locked, already navigated, or match state hasn't changed
     if (navigationLockRef.current || hasNavigatedRef.current || matchStateId === lastMatchCheckRef.current) {
       return;
     }
 
     lastMatchCheckRef.current = matchStateId;
 
-    // Only auto-navigate if there are new matches
     if (pendingMatches.length > 0 && !isCreatingDemo) {
       console.log('[Home] Auto-navigating to pending match');
       hasNavigatedRef.current = true;
@@ -228,7 +217,6 @@ export default function HomeScreen() {
     }
   }, [matches, pendingMatches.length, readyMatches.length, isCreatingDemo]);
 
-  // Reset navigation flag when returning to home screen
   useEffect(() => {
     const resetNavigation = () => {
       if (mountedRef.current) {
@@ -236,7 +224,6 @@ export default function HomeScreen() {
       }
     };
     
-    // Reset after a delay to allow for screen transitions
     const timer = setTimeout(resetNavigation, 2000);
     
     return () => clearTimeout(timer);
@@ -265,20 +252,19 @@ export default function HomeScreen() {
     return emojiMap[interest] || '✨';
   };
 
-  // Calculate progress for timer ring (0 to 1)
-  const maxTime = 45 * 60; // 45 minutes in seconds
+  const maxTime = 45 * 60;
   const progress = isOpen && remainingTime > 0 ? remainingTime / maxTime : 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.appTitle, { color: theme.text }]}>Unmute</Text>
+          <Text style={[styles.appTitle, { color: theme.primaryDark }]}>Unmute</Text>
           <View style={styles.locationRow}>
             <IconSymbol 
               ios_icon_name="location.fill" 
               android_material_icon_name="location_on" 
-              size={14} 
+              size={13} 
               color={theme.textSecondary} 
             />
             <Text style={[styles.location, { color: theme.textSecondary }]}>Munich</Text>
@@ -290,7 +276,7 @@ export default function HomeScreen() {
             disabled={isCreatingDemo || navigationLockRef.current}
             style={[
               styles.demoButton, 
-              { backgroundColor: theme.card, borderColor: theme.primary }, 
+              { backgroundColor: theme.surface, borderColor: theme.primary }, 
               shadows.sm,
               (isCreatingDemo || navigationLockRef.current) && { opacity: 0.6 }
             ]}
@@ -298,7 +284,7 @@ export default function HomeScreen() {
             <IconSymbol 
               ios_icon_name="sparkles" 
               android_material_icon_name="auto_awesome" 
-              size={20} 
+              size={18} 
               color={theme.primary} 
             />
             <Text style={[styles.demoButtonText, { color: theme.primary }]}>Demo</Text>
@@ -308,13 +294,13 @@ export default function HomeScreen() {
               hapticFeedback.light();
               router.push('/(tabs)/settings');
             }}
-            style={[styles.settingsButton, { backgroundColor: theme.card }, shadows.sm]}
+            style={[styles.settingsButton, { backgroundColor: theme.surface }, shadows.sm]}
           >
             <IconSymbol 
               ios_icon_name="gearshape.fill" 
               android_material_icon_name="settings" 
-              size={24} 
-              color={theme.text} 
+              size={22} 
+              color={theme.primaryDark} 
             />
           </TouchableOpacity>
         </View>
@@ -322,7 +308,7 @@ export default function HomeScreen() {
 
       <View style={styles.content}>
         <View style={styles.statusContainer}>
-          <Text style={[styles.statusTitle, { color: isOpen ? theme.primary : theme.text }]}>
+          <Text style={[styles.statusTitle, { color: isOpen ? theme.primary : theme.primaryDark }]}>
             {isOpen ? "You're open to connect" : "Ready to connect?"}
           </Text>
           <Text style={[styles.statusDescription, { color: theme.textSecondary }]}>
@@ -340,12 +326,12 @@ export default function HomeScreen() {
                     backgroundColor: theme.primary,
                     opacity: glowAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.1, 0.2],
+                      outputRange: [0.08, 0.15],
                     }),
                     transform: [{
                       scale: glowAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [1, 1.08],
+                        outputRange: [1, 1.06],
                       }),
                     }],
                   },
@@ -353,12 +339,11 @@ export default function HomeScreen() {
               />
             )}
             
-            {/* Progress ring around the circle */}
             {isOpen && remainingTime > 0 && (
               <View style={styles.progressRingContainer}>
                 <ProgressRing
                   size={240}
-                  strokeWidth={6}
+                  strokeWidth={5}
                   progress={progress}
                   color={theme.primary}
                   backgroundColor={theme.border}
@@ -368,11 +353,7 @@ export default function HomeScreen() {
 
             <Animated.View 
               style={[
-                styles.circle, 
-                { 
-                  backgroundColor: isOpen ? theme.primary : theme.disabled,
-                  ...shadows.xl,
-                },
+                styles.circle,
                 { transform: [{ scale: scaleAnim }] }
               ]}
             >
@@ -381,13 +362,30 @@ export default function HomeScreen() {
                 onPress={handleToggle}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.circleText, { color: isOpen ? theme.card : theme.textSecondary }]}>
-                  {isOpen ? 'Open' : 'Closed'}
-                </Text>
-                {isOpen && remainingTime > 0 && (
-                  <Text style={[styles.timerText, { color: theme.card }]}>
-                    {formatTime(remainingTime)}
-                  </Text>
+                {isOpen ? (
+                  <LinearGradient
+                    colors={[theme.primary, theme.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.circleGradient, shadows.lg]}
+                  >
+                    <View style={styles.bracketsContainer}>
+                      <Text style={[styles.bracket, { color: theme.surface }]}>[ ]</Text>
+                    </View>
+                    <Text style={[styles.circleText, { color: theme.surface }]}>Open</Text>
+                    {remainingTime > 0 && (
+                      <Text style={[styles.timerText, { color: theme.surface }]}>
+                        {formatTime(remainingTime)}
+                      </Text>
+                    )}
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.circleGradient, { backgroundColor: theme.disabled }]}>
+                    <View style={styles.bracketsContainer}>
+                      <Text style={[styles.bracket, { color: theme.textSecondary }]}>[ ]</Text>
+                    </View>
+                    <Text style={[styles.circleText, { color: theme.textSecondary }]}>Closed</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </Animated.View>
@@ -401,11 +399,11 @@ export default function HomeScreen() {
 
           {isOpen && remainingTime > 0 && (
             <View style={styles.sessionInfo}>
-              <View style={[styles.timerBadge, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={[styles.timerBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <IconSymbol 
                   ios_icon_name="clock.fill" 
                   android_material_icon_name="schedule" 
-                  size={20} 
+                  size={18} 
                   color={theme.primary} 
                 />
                 <Text style={[styles.sessionTimer, { color: theme.text }]}>
@@ -417,7 +415,7 @@ export default function HomeScreen() {
                   hapticFeedback.light();
                   closeSession();
                 }}>
-                  <Text style={[styles.link, { color: theme.text }]}>Close now</Text>
+                  <Text style={[styles.link, { color: theme.textSecondary }]}>Close now</Text>
                 </TouchableOpacity>
                 <Text style={[styles.separator, { color: theme.textSecondary }]}>•</Text>
                 <TouchableOpacity onPress={handleExtend}>
@@ -430,10 +428,10 @@ export default function HomeScreen() {
 
         {user && user.interests && user.interests.length > 0 && (
           <View style={styles.interestsSection}>
-            <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests:</Text>
+            <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={`interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.card, borderColor: theme.border }, shadows.sm]}>
+                <View key={`interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
                 </View>
@@ -459,7 +457,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.huge,
   },
   appTitle: {
-    ...typography.title,
+    ...typography.h1,
     marginBottom: spacing.xs,
   },
   locationRow: {
@@ -500,15 +498,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.huge,
   },
   statusTitle: {
-    ...typography.subtitle,
+    ...typography.h2,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   statusDescription: {
     ...typography.body,
     textAlign: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     marginBottom: spacing.huge,
+    lineHeight: 24,
   },
   circleContainer: {
     alignItems: 'center',
@@ -530,22 +529,33 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   circleButton: {
     width: '100%',
     height: '100%',
+  },
+  circleGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 110,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  bracketsContainer: {
+    marginBottom: spacing.xs,
+  },
+  bracket: {
+    fontSize: 48,
+    fontWeight: '300',
+    letterSpacing: -2,
+  },
   circleText: {
-    ...typography.title,
+    ...typography.h2,
     marginBottom: spacing.xs,
   },
   timerText: {
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '700',
     letterSpacing: -1,
     marginTop: spacing.xs,
   },
@@ -556,7 +566,7 @@ const styles = StyleSheet.create({
   sessionInfo: {
     alignItems: 'center',
     marginTop: spacing.xl,
-    gap: spacing.lg,
+    gap: spacing.md,
     width: '100%',
   },
   timerBadge: {
@@ -568,15 +578,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
   sessionTimer: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    ...typography.body,
+    fontWeight: '500',
   },
   sessionActions: {
     flexDirection: 'row',
@@ -618,7 +627,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   interestEmoji: {
-    fontSize: 16,
+    fontSize: 15,
   },
   interestText: {
     ...typography.caption,

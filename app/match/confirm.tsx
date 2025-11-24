@@ -2,15 +2,17 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { router } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { commonStyles, buttonStyles, spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSession } from '@/contexts/SessionContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function ConfirmMatchScreen() {
   const { matches, confirmMatch } = useSession();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [visible, setVisible] = React.useState(true);
   const [isConfirming, setIsConfirming] = React.useState(false);
   const mountedRef = React.useRef(false);
@@ -20,7 +22,6 @@ export default function ConfirmMatchScreen() {
     m => m.status === 'user_a_interested' || m.status === 'user_b_interested'
   );
 
-  // Mark as mounted after initial render
   useEffect(() => {
     console.log('[ConfirmMatch] Screen mounted');
     mountedRef.current = true;
@@ -33,7 +34,6 @@ export default function ConfirmMatchScreen() {
   }, []);
 
   useEffect(() => {
-    // Don't do anything until we're fully mounted
     if (!mountedRef.current || hasConfirmedRef.current) {
       return;
     }
@@ -51,7 +51,6 @@ export default function ConfirmMatchScreen() {
       return;
     }
 
-    // Check if both users have confirmed
     const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_ready');
     if (bothReady) {
       console.log('[ConfirmMatch] Both users ready, navigating to ready screen');
@@ -132,82 +131,92 @@ export default function ConfirmMatchScreen() {
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={[commonStyles.container, styles.container]}>
+      <View style={[commonStyles.container, styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Confirm</Text>
-          <TouchableOpacity 
-            onPress={handleClose} 
-            style={styles.closeButton}
-            disabled={isConfirming}
-          >
-            <IconSymbol 
-              ios_icon_name="xmark" 
-              android_material_icon_name="close" 
-              size={20} 
-              color={colors.text} 
-            />
-          </TouchableOpacity>
+          <View style={[styles.dragHandle, { backgroundColor: theme.border }]} />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>
-            Share your profile with this match?
+          <View style={[styles.iconContainer, { backgroundColor: theme.highlight }, shadows.md]}>
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle" 
+              size={40} 
+              color={theme.primary} 
+            />
+          </View>
+
+          <Text style={[styles.title, { color: theme.primaryDark }]}>
+            Are you ready to meet?
           </Text>
 
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Once you both confirm, you can coordinate and meet
           </Text>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoLabel}>They&apos;ll see:</Text>
+          <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.border }]}>
+            <Text style={[styles.infoLabel, { color: theme.text }]}>They'll see</Text>
             
             {infoItems.map((item, index) => (
               <View key={`info-item-${index}-${item}`} style={styles.infoItem}>
-                <View style={styles.checkCircle}>
+                <View style={[styles.checkCircle, { backgroundColor: theme.highlight }]}>
                   <IconSymbol 
                     ios_icon_name="checkmark" 
                     android_material_icon_name="check" 
-                    size={16} 
-                    color={colors.primary} 
+                    size={14} 
+                    color={theme.primary} 
                   />
                 </View>
-                <Text style={styles.infoText}>{item}</Text>
+                <Text style={[styles.infoText, { color: theme.text }]}>{item}</Text>
               </View>
             ))}
           </View>
 
-          <View style={styles.privacyBox}>
+          <View style={[styles.privacyBox, { backgroundColor: theme.highlight, borderColor: theme.border }]}>
             <IconSymbol 
               ios_icon_name="lock.fill" 
               android_material_icon_name="lock" 
               size={18} 
-              color={colors.textSecondary} 
+              color={theme.primary} 
             />
-            <Text style={styles.privacyText}>
+            <Text style={[styles.privacyText, { color: theme.text }]}>
               Your privacy: We never share your exact location. Only both of you can see this match.
             </Text>
           </View>
         </View>
 
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
           <TouchableOpacity 
-            style={[buttonStyles.primary, styles.button, isConfirming && { opacity: 0.6 }]}
+            style={[buttonStyles.primary, styles.button, { backgroundColor: theme.primary }, shadows.md, isConfirming && { opacity: 0.6 }]}
             onPress={handleConfirm}
             disabled={isConfirming}
           >
-            <Text style={[buttonStyles.text]}>
-              Yes, share my profile
+            <Text style={[buttonStyles.text, { color: theme.surface }]}>
+              Yes, I&apos;m ready
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[buttonStyles.secondary, styles.button, isConfirming && { opacity: 0.6 }]}
+            style={[buttonStyles.secondary, styles.button, { backgroundColor: theme.surface, borderColor: theme.border }, isConfirming && { opacity: 0.6 }]}
             onPress={handleNotInterested}
             disabled={isConfirming}
           >
-            <Text style={buttonStyles.textSecondary}>Not interested</Text>
+            <Text style={[buttonStyles.textSecondary, { color: theme.text }]}>Not interested</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity 
+          onPress={handleClose} 
+          style={[styles.closeButton, { backgroundColor: theme.surface }, shadows.sm]}
+          disabled={isConfirming}
+        >
+          <IconSymbol 
+            ios_icon_name="xmark" 
+            android_material_icon_name="close" 
+            size={18} 
+            color={theme.primaryDark} 
+          />
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -215,93 +224,99 @@ export default function ConfirmMatchScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 20,
+    paddingTop: spacing.xl,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  closeButton: {
-    padding: 4,
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xl,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.xxl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-    lineHeight: 36,
+    ...typography.h1,
+    fontSize: 26,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 32,
-    lineHeight: 24,
+    ...typography.body,
+    marginBottom: spacing.xxxl,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   infoBox: {
-    backgroundColor: colors.secondary,
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
   },
   infoLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
+    ...typography.bodyBold,
+    marginBottom: spacing.lg,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primaryLight,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   infoText: {
-    fontSize: 15,
-    color: colors.text,
+    ...typography.body,
     flex: 1,
   },
   privacyBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.highlight,
-    padding: 16,
-    borderRadius: 12,
-    gap: 10,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    gap: spacing.md,
+    borderWidth: 1,
   },
   privacyText: {
     flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.caption,
     lineHeight: 20,
   },
   buttonContainer: {
-    padding: 24,
-    gap: 12,
+    padding: spacing.xxl,
+    gap: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   button: {
     width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: spacing.xxl,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
