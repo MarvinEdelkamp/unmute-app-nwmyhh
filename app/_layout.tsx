@@ -118,6 +118,7 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
         <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
         <Stack.Screen name="auth/interests" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="match/pending" options={{ headerShown: false }} />
         <Stack.Screen name="match/confirm" options={{ headerShown: false }} />
         <Stack.Screen name="match/ready" options={{ headerShown: false }} />

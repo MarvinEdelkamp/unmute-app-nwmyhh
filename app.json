@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Unmute",
@@ -25,7 +26,24 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      "package": "com.anonymous.Natively",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "natively.dev",
+              "pathPrefix": "/email-confirmed"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -36,13 +54,12 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "natively",
+    "scheme": "unmute",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "router": {}
     }
-  },
-  "scheme": "Unmute"
+  }
 }

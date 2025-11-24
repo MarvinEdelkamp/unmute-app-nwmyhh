@@ -1,9 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, getRedirectUrl } from '@/lib/supabase';
 import { errorHandler } from '@/utils/errorHandler';
 import { Alert } from 'react-native';
+import * as Linking from 'expo-linking';
 
 export interface Profile {
   id: string;
@@ -78,8 +79,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Handle deep link for auth callback
+    const handleDeepLink = async (event: { url: string }) => {
+      console.log('[AuthContext] Deep link received:', event.url);
+      
+      // Parse the URL to extract auth tokens
+      const url = event.url;
+      
+      // Check if this is an auth callback
+      if (url.includes('auth/callback') || url.includes('#access_token=')) {
+        console.log('[AuthContext] Processing auth callback from deep link');
+        
+        // Extract the hash fragment if present
+        const hashIndex = url.indexOf('#');
+        if (hashIndex !== -1) {
+          const hash = url.substring(hashIndex + 1);
+          const params = new URLSearchParams(hash);
+          
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            console.log('[AuthContext] Setting session from deep link tokens');
+            
+            try {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              
+              if (error) {
+                console.error('[AuthContext] Error setting session:', error);
+                Alert.alert('Authentication Error', 'Failed to complete sign in. Please try again.');
+              } else {
+                console.log('[AuthContext] Session set successfully from deep link');
+                Alert.alert('Success', 'You have been signed in successfully!');
+              }
+            } catch (error) {
+              console.error('[AuthContext] Exception setting session:', error);
+            }
+          }
+        }
+      }
+    };
+
+    // Listen for deep links
+    const subscription2 = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened with a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('[AuthContext] App opened with URL:', url);
+        handleDeepLink({ url });
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
+      subscription2.remove();
     };
   }, []);
 
@@ -148,10 +205,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('[AuthContext] Signing up with email:', email);
       
+      const redirectUrl = getRedirectUrl();
+      console.log('[AuthContext] Using redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://natively.dev/email-confirmed',
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -166,6 +226,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] Magic link sent successfully');
     } catch (error) {
       console.error('[AuthContext] Sign up error:', error);
+      
+      // Check for rate limit error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds')) {
+        Alert.alert(
+          'Please wait',
+          'For security purposes, you can only request a magic link once every 60 seconds. Please wait a moment and try again.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+      
       errorHandler.logError(error as Error, 'AUTH_SIGNUP');
       throw error;
     }
@@ -175,10 +248,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('[AuthContext] Signing in with email:', email);
       
+      const redirectUrl = getRedirectUrl();
+      console.log('[AuthContext] Using redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://natively.dev/email-confirmed',
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -193,6 +269,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] Magic link sent successfully');
     } catch (error) {
       console.error('[AuthContext] Sign in error:', error);
+      
+      // Check for rate limit error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds')) {
+        Alert.alert(
+          'Please wait',
+          'For security purposes, you can only request a magic link once every 60 seconds. Please wait a moment and try again.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+      
       errorHandler.logError(error as Error, 'AUTH_SIGNIN');
       throw error;
     }
