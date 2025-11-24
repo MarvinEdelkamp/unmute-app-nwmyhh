@@ -10,22 +10,28 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function SignInScreen() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
     try {
       setLoading(true);
-      await signIn(email, password);
-      router.replace('/(tabs)/(home)/');
+      await signIn(email.trim());
+      // Don't navigate - user needs to click the magic link first
     } catch (error) {
-      Alert.alert('Error', 'Invalid email or password');
       console.log('Sign in error:', error);
+      // Error is already handled in AuthContext with Alert
     } finally {
       setLoading(false);
     }
@@ -60,30 +66,21 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
+                editable={!loading}
               />
             </View>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <IconSymbol 
-                ios_icon_name="lock.fill" 
-                android_material_icon_name="lock" 
-                size={20} 
-                color={colors.textSecondary} 
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor={colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
+          <View style={styles.infoBox}>
+            <IconSymbol 
+              ios_icon_name="info.circle.fill" 
+              android_material_icon_name="info" 
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.infoText}>
+              We&apos;ll send you a magic link to sign in. No password needed!
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -95,13 +92,14 @@ export default function SignInScreen() {
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Sending magic link...' : 'Continue with email'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.linkButton}
           onPress={() => router.back()}
+          disabled={loading}
         >
           <Text style={styles.linkText}>
             Don&apos;t have an account? <Text style={styles.linkTextBold}>Sign up</Text>
@@ -164,6 +162,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
     color: colors.text,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '30',
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   bottomContainer: {
     position: 'absolute',

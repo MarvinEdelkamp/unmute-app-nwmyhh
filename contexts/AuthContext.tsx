@@ -5,6 +5,7 @@ import { supabase, getRedirectUrl } from '@/lib/supabase';
 import { errorHandler } from '@/utils/errorHandler';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 
 export interface Profile {
   id: string;
@@ -72,6 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         loadProfile(session.user.id);
+        
+        // Navigate to the appropriate screen after successful auth
+        if (_event === 'SIGNED_IN') {
+          console.log('[AuthContext] User signed in, checking onboarding status...');
+          // The navigation will be handled by the root layout based on hasCompletedOnboarding
+        }
       } else {
         setProfile(null);
         setInterestsState([]);
@@ -83,42 +90,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleDeepLink = async (event: { url: string }) => {
       console.log('[AuthContext] Deep link received:', event.url);
       
-      // Parse the URL to extract auth tokens
       const url = event.url;
       
-      // Check if this is an auth callback
-      if (url.includes('auth/callback') || url.includes('#access_token=')) {
+      // Check if this is an auth callback with tokens
+      if (url.includes('auth/callback') || url.includes('#access_token=') || url.includes('?access_token=')) {
         console.log('[AuthContext] Processing auth callback from deep link');
         
-        // Extract the hash fragment if present
-        const hashIndex = url.indexOf('#');
-        if (hashIndex !== -1) {
-          const hash = url.substring(hashIndex + 1);
-          const params = new URLSearchParams(hash);
+        try {
+          // Try to extract tokens from hash fragment
+          let accessToken: string | null = null;
+          let refreshToken: string | null = null;
           
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
+          // Check hash fragment (format: #access_token=xxx&refresh_token=yyy)
+          const hashIndex = url.indexOf('#');
+          if (hashIndex !== -1) {
+            const hash = url.substring(hashIndex + 1);
+            const params = new URLSearchParams(hash);
+            accessToken = params.get('access_token');
+            refreshToken = params.get('refresh_token');
+          }
           
-          if (accessToken && refreshToken) {
-            console.log('[AuthContext] Setting session from deep link tokens');
-            
-            try {
-              const { data, error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              });
-              
-              if (error) {
-                console.error('[AuthContext] Error setting session:', error);
-                Alert.alert('Authentication Error', 'Failed to complete sign in. Please try again.');
-              } else {
-                console.log('[AuthContext] Session set successfully from deep link');
-                Alert.alert('Success', 'You have been signed in successfully!');
-              }
-            } catch (error) {
-              console.error('[AuthContext] Exception setting session:', error);
+          // If not in hash, check query params (format: ?access_token=xxx&refresh_token=yyy)
+          if (!accessToken) {
+            const queryIndex = url.indexOf('?');
+            if (queryIndex !== -1) {
+              const query = url.substring(queryIndex + 1);
+              const params = new URLSearchParams(query);
+              accessToken = params.get('access_token');
+              refreshToken = params.get('refresh_token');
             }
           }
+          
+          if (accessToken && refreshToken) {
+            console.log('[AuthContext] Found auth tokens in deep link, setting session...');
+            
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (error) {
+              console.error('[AuthContext] Error setting session:', error);
+              Alert.alert('Authentication Error', 'Failed to complete sign in. Please try again.');
+            } else {
+              console.log('[AuthContext] Session set successfully from deep link');
+              Alert.alert('Success', 'You have been signed in successfully!');
+            }
+          } else {
+            console.log('[AuthContext] No auth tokens found in deep link URL');
+          }
+        } catch (error) {
+          console.error('[AuthContext] Exception processing deep link:', error);
+          Alert.alert('Error', 'Failed to process authentication. Please try again.');
         }
       }
     };
@@ -219,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       Alert.alert(
         'Check your email',
-        'We sent you a magic link to sign in. Please check your email and click the link to continue.',
+        `We sent you a magic link to sign in. Please check your email (${email}) and click the link to continue.\n\nIMPORTANT: After clicking the link in your email, you may need to manually return to this app.`,
         [{ text: 'OK' }]
       );
 
@@ -229,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Check for rate limit error
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds')) {
+      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds') || errorMessage.includes('60 seconds')) {
         Alert.alert(
           'Please wait',
           'For security purposes, you can only request a magic link once every 60 seconds. Please wait a moment and try again.',
@@ -262,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       Alert.alert(
         'Check your email',
-        'We sent you a magic link to sign in. Please check your email and click the link to continue.',
+        `We sent you a magic link to sign in. Please check your email (${email}) and click the link to continue.\n\nIMPORTANT: After clicking the link in your email, you may need to manually return to this app.`,
         [{ text: 'OK' }]
       );
 
@@ -272,7 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Check for rate limit error
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds')) {
+      if (errorMessage.includes('security purposes') || errorMessage.includes('25 seconds') || errorMessage.includes('60 seconds')) {
         Alert.alert(
           'Please wait',
           'For security purposes, you can only request a magic link once every 60 seconds. Please wait a moment and try again.',
