@@ -18,7 +18,7 @@ SplashScreen.preventAutoHideAsync().catch((error) => {
   console.log('Error preventing splash screen auto-hide:', error);
 });
 
-setupErrorLogging();
+setupErrorLogging(); // abc
 
 function RootLayoutNav() {
   const { user, loading, hasCompletedOnboarding } = useAuth();
