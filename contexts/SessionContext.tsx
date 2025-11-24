@@ -48,6 +48,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isOpen && session && !isCleaningUp.current) {
       console.log('[SessionContext] Session is open, starting tracking');
+      console.log('[SessionContext] Session expires at:', session.expiresAt);
       startLocationTracking();
       startMatchChecking();
       startTimer();
@@ -83,9 +84,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const now = new Date();
         const expiresAt = new Date(sessionData.expiresAt);
         
+        console.log('[SessionContext] Session found - now:', now.toISOString(), 'expires:', expiresAt.toISOString());
+        
         if (now < expiresAt && sessionData.status === 'open') {
           setSession(sessionData);
-          console.log('[SessionContext] Session loaded successfully:', sessionData.id);
+          
+          // Calculate initial remaining time
+          const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+          setRemainingTime(remaining);
+          
+          console.log('[SessionContext] Session loaded successfully:', sessionData.id, 'remaining:', remaining, 'seconds');
         } else {
           await storage.removeItem('session');
           console.log('[SessionContext] Expired session removed');
@@ -127,12 +135,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
     
     console.log('[SessionContext] Starting timer');
+    
+    // Calculate initial remaining time immediately
+    if (session) {
+      const now = new Date();
+      const expiresAt = new Date(session.expiresAt);
+      const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      setRemainingTime(remaining);
+      console.log('[SessionContext] Initial remaining time:', remaining, 'seconds');
+    }
+    
     timerInterval.current = setInterval(() => {
       if (session && !isCleaningUp.current) {
         const now = new Date();
         const expiresAt = new Date(session.expiresAt);
         const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
         
+        console.log('[SessionContext] Timer tick - remaining:', remaining, 'seconds');
         setRemainingTime(remaining);
         
         if (remaining === 0) {
@@ -148,6 +167,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.log('[SessionContext] Stopping timer');
       clearInterval(timerInterval.current);
       timerInterval.current = null;
+      setRemainingTime(0);
     }
   };
 
@@ -281,6 +301,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const now = new Date();
       const expiresAt = new Date(now.getTime() + defaultOpenTime * 60000);
 
+      console.log('[SessionContext] Creating session - now:', now.toISOString(), 'expires:', expiresAt.toISOString());
+
       const newSession: Session = {
         id: Date.now().toString(),
         userId: user.id,
@@ -295,7 +317,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setSession(newSession);
-      console.log('[SessionContext] Session opened successfully:', newSession.id);
+      
+      // Calculate and set initial remaining time
+      const remaining = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
+      setRemainingTime(remaining);
+      
+      console.log('[SessionContext] Session opened successfully:', newSession.id, 'remaining:', remaining, 'seconds');
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_OPEN');
       errorHandler.showError('Failed to open session. Please try again.');
@@ -338,7 +365,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
 
         setSession(extendedSession);
-        console.log('[SessionContext] Session extended successfully');
+        
+        // Recalculate remaining time
+        const now = new Date();
+        const remaining = Math.floor((newExpiresAt.getTime() - now.getTime()) / 1000);
+        setRemainingTime(remaining);
+        
+        console.log('[SessionContext] Session extended successfully, new remaining:', remaining, 'seconds');
       }
     } catch (error) {
       errorHandler.logError(error as Error, 'SESSION_EXTEND');
@@ -443,6 +476,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.error('[SessionContext] Error closing match:', error);
     }
   };
+
+  console.log('[SessionContext] Current state - isOpen:', isOpen, 'remainingTime:', remainingTime, 'matches:', matches.length);
 
   return (
     <SessionContext.Provider

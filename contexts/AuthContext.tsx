@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     loadUser();
@@ -32,41 +32,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] Starting to load user data...');
       setLoading(true);
       
-      // Load user and onboarding status with a shorter timeout
-      const loadPromise = Promise.all([
-        storage.getItem<User>('user'),
-        storage.getItem<boolean>('onboarded'),
-      ]);
-
-      const timeoutPromise = new Promise<[null, null]>((resolve) => 
-        setTimeout(() => {
-          console.warn('[AuthContext] Storage load timeout (2s), using defaults');
-          resolve([null, null]);
-        }, 2000)
-      );
-
-      const [userData, onboardedData] = await Promise.race([
-        loadPromise,
-        timeoutPromise,
-      ]);
+      // Load onboarding status FIRST - this is critical for routing
+      const onboardedData = await storage.getItem<boolean>('onboarded');
+      console.log('[AuthContext] Onboarding status from storage:', onboardedData);
       
+      // Set onboarding status immediately - null means not set, false means not completed
+      if (onboardedData === true) {
+        setHasCompletedOnboarding(true);
+        console.log('[AuthContext] User has completed onboarding');
+      } else {
+        setHasCompletedOnboarding(false);
+        console.log('[AuthContext] User has NOT completed onboarding (or no data found)');
+      }
+      
+      // Then load user data
+      const userData = await storage.getItem<User>('user');
       if (userData) {
         setUser(userData);
         console.log('[AuthContext] User loaded successfully:', userData.id);
       } else {
         console.log('[AuthContext] No user data found');
       }
-      
-      if (onboardedData) {
-        setHasCompletedOnboarding(onboardedData);
-        console.log('[AuthContext] Onboarding status loaded:', onboardedData);
-      } else {
-        console.log('[AuthContext] No onboarding data found, defaulting to false');
-      }
     } catch (error) {
       errorHandler.logError(error as Error, 'AUTH_LOAD_USER');
       console.error('[AuthContext] Error loading user:', error);
-      // Don't throw - allow app to continue with no user
+      // Set to false on error to show onboarding
+      setHasCompletedOnboarding(false);
     } finally {
       console.log('[AuthContext] Finished loading, setting loading to false');
       setLoading(false);
@@ -205,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = async () => {
     try {
+      console.log('[AuthContext] Marking onboarding as complete...');
       const success = await storage.setItem('onboarded', true);
       if (!success) {
         throw new Error('Failed to save onboarding status');
@@ -224,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
-        hasCompletedOnboarding,
+        hasCompletedOnboarding: hasCompletedOnboarding === true,
         signUp,
         signIn,
         signOut,

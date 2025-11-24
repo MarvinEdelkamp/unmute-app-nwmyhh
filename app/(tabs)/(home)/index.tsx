@@ -26,6 +26,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     console.log('[Home] Component mounted');
+    console.log('[Home] Session state - isOpen:', isOpen, 'remainingTime:', remainingTime);
     mountedRef.current = true;
     
     return () => {
@@ -33,6 +34,11 @@ export default function HomeScreen() {
       mountedRef.current = false;
     };
   }, []);
+
+  // Log timer updates
+  useEffect(() => {
+    console.log('[Home] Timer update - isOpen:', isOpen, 'remainingTime:', remainingTime);
+  }, [isOpen, remainingTime]);
 
   useEffect(() => {
     if (isOpen) {
@@ -395,15 +401,15 @@ export default function HomeScreen() {
 
           {isOpen && remainingTime > 0 && (
             <View style={styles.sessionInfo}>
-              <View style={styles.timerBadge}>
+              <View style={[styles.timerBadge, { backgroundColor: theme.card, borderColor: theme.border }]}>
                 <IconSymbol 
                   ios_icon_name="clock.fill" 
                   android_material_icon_name="schedule" 
-                  size={16} 
+                  size={20} 
                   color={theme.primary} 
                 />
                 <Text style={[styles.sessionTimer, { color: theme.text }]}>
-                  Ends at {formatEndTime(remainingTime)}
+                  Session ends at {formatEndTime(remainingTime)}
                 </Text>
               </View>
               <View style={styles.sessionActions}>
@@ -538,9 +544,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   timerText: {
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1,
+    marginTop: spacing.xs,
   },
   visibilityText: {
     ...typography.caption,
@@ -548,27 +555,33 @@ const styles = StyleSheet.create({
   },
   sessionInfo: {
     alignItems: 'center',
-    marginTop: spacing.lg,
-    gap: spacing.md,
+    marginTop: spacing.xl,
+    gap: spacing.lg,
+    width: '100%',
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sessionTimer: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
   sessionActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   separator: {
     ...typography.caption,
@@ -580,7 +593,7 @@ const styles = StyleSheet.create({
   },
   linkPrimary: {
     ...typography.caption,
-    fontWeight: '500',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   interestsSection: {

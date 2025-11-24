@@ -83,15 +83,17 @@ function RootLayoutNav() {
   }
 
   console.log('[App] App ready, rendering navigation');
+  console.log('[App] Final routing decision - hasCompletedOnboarding:', hasCompletedOnboarding, 'user:', user ? 'exists' : 'null');
 
   // Determine initial route based on app state
   // Priority: onboarding -> signup -> interests -> main tabs
   let initialRoute = null;
   
   // First check: Has user completed onboarding flow?
+  // This is the MOST IMPORTANT check - if false, always show onboarding
   if (!hasCompletedOnboarding) {
     initialRoute = '/onboarding';
-    console.log('[App] Redirecting to onboarding - user has not completed onboarding');
+    console.log('[App] ✅ REDIRECTING TO ONBOARDING - user has not completed onboarding');
   } 
   // Second check: Is user logged in?
   else if (!user) {

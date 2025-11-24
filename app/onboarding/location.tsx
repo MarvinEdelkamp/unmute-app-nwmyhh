@@ -179,7 +179,7 @@ export default function LocationScreen() {
           disabled={loading || permissionStatus === 'requesting'}
         >
           <Text style={styles.buttonText}>
-            {permissionStatus === 'requesting' ? 'Requesting Permission...' : 'Enable Location'}
+            {permissionStatus === 'requesting' ? 'Requesting...' : 'Enable Location'}
           </Text>
         </TouchableOpacity>
         
@@ -310,8 +310,8 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     minHeight: 58,
-    paddingVertical: spacing.lg + spacing.md,
-    paddingHorizontal: spacing.xxxl + spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
