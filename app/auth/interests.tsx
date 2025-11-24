@@ -258,11 +258,11 @@ export default function InterestsScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryScrollContent}
             >
-              {interestCategories.map((category) => {
+              {interestCategories.map((category, index) => {
                 const isSelected = category.id === selectedCategory;
                 return (
                   <TouchableOpacity
-                    key={`category-${category.id}`}
+                    key={`category-${index}`}
                     style={[
                       styles.categoryChip,
                       { 
