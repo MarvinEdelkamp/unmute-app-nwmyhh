@@ -59,7 +59,9 @@ export default function EditableElement_(_props: PropsWithChildren<any>) {
   const __sourceLocation = props.__sourceLocation;
   const __trace = props.__trace;
   const id = __trace.join("");
-  const attributes = overwrittenProps[id] ?? {};
+  
+  // FIX: Check if overwrittenProps exists before accessing it
+  const attributes = (overwrittenProps && overwrittenProps[id]) ? overwrittenProps[id] : {};
 
   const editStyling =
     selected === id
