@@ -89,9 +89,9 @@ function RootLayoutNav() {
   // Priority: onboarding -> signup -> interests -> main tabs
   let initialRoute = null;
   
-  // First check: Has user completed onboarding flow?
-  // This is the MOST IMPORTANT check - if false, always show onboarding
-  if (!hasCompletedOnboarding) {
+  // CRITICAL FIX: Check onboarding status FIRST
+  // If hasCompletedOnboarding is false, ALWAYS show onboarding
+  if (hasCompletedOnboarding === false) {
     initialRoute = '/onboarding';
     console.log('[App] ✅ REDIRECTING TO ONBOARDING - user has not completed onboarding');
   } 

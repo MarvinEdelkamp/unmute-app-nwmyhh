@@ -431,7 +431,7 @@ export default function HomeScreen() {
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests</Text>
             <View style={styles.interestsGrid}>
               {user.interests.map((interest, index) => (
-                <View key={`interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
+                <View key={`user-interest-${user.id}-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
                 </View>

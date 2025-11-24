@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 58,
     paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.xxl,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -323,10 +323,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.card,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   skipButton: {
     paddingVertical: spacing.md,

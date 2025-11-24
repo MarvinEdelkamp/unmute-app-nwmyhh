@@ -167,7 +167,7 @@ export default function PendingMatchScreen() {
             <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>You both love</Text>
             <View style={styles.interestsRow}>
               {pendingMatch.sharedInterests.map((interest, index) => (
-                <View key={`shared-interest-${pendingMatch.id}-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.highlight, borderColor: theme.primary }]}>
+                <View key={`match-${pendingMatch.id}-interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.highlight, borderColor: theme.primary }]}>
                   <Text style={[styles.interestText, { color: theme.primary }]}>{interest}</Text>
                 </View>
               ))}
