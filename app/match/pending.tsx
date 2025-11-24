@@ -19,7 +19,7 @@ export default function PendingMatchScreen() {
   const hasRespondedRef = React.useRef(false);
 
   const pendingMatch = matches.find(
-    m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested'
+    m => m.status === 'pending' || m.status === 'user_a_accepted' || m.status === 'user_b_accepted'
   );
 
   useEffect(() => {
@@ -51,10 +51,10 @@ export default function PendingMatchScreen() {
       return;
     }
 
-    if (pendingMatch.status === 'user_a_interested' || pendingMatch.status === 'user_b_interested') {
+    if (pendingMatch.status === 'user_a_accepted' || pendingMatch.status === 'user_b_accepted') {
       const isCurrentUserInterested = 
-        (pendingMatch.status === 'user_a_interested' && pendingMatch.userA.id === user?.id) ||
-        (pendingMatch.status === 'user_b_interested' && pendingMatch.userB.id === user?.id);
+        (pendingMatch.status === 'user_a_accepted' && pendingMatch.user_a_id === user?.id) ||
+        (pendingMatch.status === 'user_b_accepted' && pendingMatch.user_b_id === user?.id);
       
       if (isCurrentUserInterested && !isResponding) {
         console.log('[PendingMatch] Current user already responded, navigating to confirm');
@@ -166,7 +166,7 @@ export default function PendingMatchScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>You both love</Text>
             <View style={styles.interestsRow}>
-              {pendingMatch.sharedInterests.map((interest, index) => (
+              {pendingMatch.shared_interests.slice(0, 3).map((interest, index) => (
                 <View key={`match-${pendingMatch.id}-interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.highlight, borderColor: theme.primary }]}>
                   <Text style={[styles.interestText, { color: theme.primary }]}>{interest}</Text>
                 </View>
@@ -183,7 +183,7 @@ export default function PendingMatchScreen() {
                 size={16} 
                 color={theme.primary} 
               />
-              <Text style={[styles.locationText, { color: theme.text }]}>English Garden</Text>
+              <Text style={[styles.locationText, { color: theme.text }]}>Nearby</Text>
             </View>
           </View>
 

@@ -17,7 +17,7 @@ const PRESET_MESSAGES = [
 ];
 
 export default function ReadyMatchScreen() {
-  const { matches, closeMatch } = useSession();
+  const { matches, closeMatch, updateMatchMessage } = useSession();
   const { user } = useAuth();
   const { theme } = useTheme();
   const [customMessage, setCustomMessage] = useState('');
@@ -25,7 +25,7 @@ export default function ReadyMatchScreen() {
   const [visible, setVisible] = useState(true);
   const mountedRef = React.useRef(false);
 
-  const readyMatch = matches.find(m => m.status === 'both_ready');
+  const readyMatch = matches.find(m => m.status === 'both_accepted');
 
   useEffect(() => {
     console.log('[ReadyMatch] Screen mounted');
@@ -59,7 +59,10 @@ export default function ReadyMatchScreen() {
     return null;
   }
 
-  const otherUser = readyMatch.userA.id === user?.id ? readyMatch.userB : readyMatch.userA;
+  const isUserA = readyMatch.user_a_id === user?.id;
+  const otherUserProfile = isUserA ? readyMatch.user_b_profile : readyMatch.user_a_profile;
+  const otherUserMessage = isUserA ? readyMatch.user_b_message : readyMatch.user_a_message;
+  const currentUserMessage = isUserA ? readyMatch.user_a_message : readyMatch.user_b_message;
 
   const handleSayHi = () => {
     console.log('[ReadyMatch] User confirmed they will say hi');
@@ -97,9 +100,27 @@ export default function ReadyMatchScreen() {
     }, 200);
   };
 
-  const handlePresetPress = (message: string) => {
+  const handlePresetPress = async (message: string) => {
     setSelectedPreset(message);
     console.log('[ReadyMatch] Preset message selected:', message);
+    
+    try {
+      await updateMatchMessage(readyMatch.id, message);
+    } catch (error) {
+      console.error('[ReadyMatch] Error updating message:', error);
+    }
+  };
+
+  const handleCustomMessageSubmit = async () => {
+    if (!customMessage.trim()) return;
+    
+    console.log('[ReadyMatch] Custom message submitted:', customMessage);
+    
+    try {
+      await updateMatchMessage(readyMatch.id, customMessage);
+    } catch (error) {
+      console.error('[ReadyMatch] Error updating message:', error);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -132,12 +153,18 @@ export default function ReadyMatchScreen() {
         >
           <View style={[styles.profileSection, { backgroundColor: theme.secondary, borderColor: theme.border }]}>
             <View style={styles.avatarContainer}>
-              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-                <Text style={[styles.avatarText, { color: theme.surface }]}>{getInitials(otherUser.name)}</Text>
-              </View>
+              {otherUserProfile.photo_url ? (
+                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                  <Text style={[styles.avatarText, { color: theme.surface }]}>{getInitials(otherUserProfile.display_name)}</Text>
+                </View>
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                  <Text style={[styles.avatarText, { color: theme.surface }]}>{getInitials(otherUserProfile.display_name)}</Text>
+                </View>
+              )}
             </View>
 
-            <Text style={[styles.name, { color: theme.primaryDark }]}>{otherUser.name}</Text>
+            <Text style={[styles.name, { color: theme.primaryDark }]}>{otherUserProfile.display_name}</Text>
 
             <View style={styles.locationRow}>
               <IconSymbol 
@@ -146,12 +173,12 @@ export default function ReadyMatchScreen() {
                 size={14} 
                 color={theme.textSecondary} 
               />
-              <Text style={[styles.location, { color: theme.textSecondary }]}>English Garden</Text>
+              <Text style={[styles.location, { color: theme.textSecondary }]}>Nearby</Text>
             </View>
 
             <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>You both love</Text>
             <View style={styles.interestsRow}>
-              {readyMatch.sharedInterests.map((interest, index) => (
+              {readyMatch.shared_interests.slice(0, 3).map((interest, index) => (
                 <View key={`shared-interest-${readyMatch.id}-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.primary }]}>
                   <Text style={[styles.interestText, { color: theme.primary }]}>{interest}</Text>
                 </View>
@@ -173,11 +200,30 @@ export default function ReadyMatchScreen() {
               </Text>
               <View style={styles.exampleBox}>
                 <Text style={[styles.exampleText, { color: theme.surface }]}>
-                  &quot;Hi! Are you on Unmute? Looks like we both love Hiking.&quot;
+                  &quot;Hi! Are you on Unmute? Looks like we both love {readyMatch.shared_interests[0]}.&quot;
                 </Text>
               </View>
             </View>
           </View>
+
+          {otherUserMessage && (
+            <View style={[styles.messageBox, { backgroundColor: theme.highlight, borderColor: theme.primary }]}>
+              <IconSymbol 
+                ios_icon_name="message.fill" 
+                android_material_icon_name="message" 
+                size={18} 
+                color={theme.primary} 
+              />
+              <View style={styles.messageContent}>
+                <Text style={[styles.messageLabel, { color: theme.textSecondary }]}>
+                  {otherUserProfile.display_name} says:
+                </Text>
+                <Text style={[styles.messageText, { color: theme.text }]}>
+                  {otherUserMessage}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.coordinationSection}>
             <Text style={[styles.coordinationLabel, { color: theme.text }]}>Help them find you (optional)</Text>
@@ -188,14 +234,14 @@ export default function ReadyMatchScreen() {
                 style={[
                   styles.presetButton,
                   { backgroundColor: theme.surface, borderColor: theme.border },
-                  selectedPreset === message && { backgroundColor: theme.highlight, borderColor: theme.primary }
+                  (selectedPreset === message || currentUserMessage === message) && { backgroundColor: theme.highlight, borderColor: theme.primary }
                 ]}
                 onPress={() => handlePresetPress(message)}
               >
                 <Text style={[
                   styles.presetText,
                   { color: theme.text },
-                  selectedPreset === message && { color: theme.primary, fontWeight: '500' }
+                  (selectedPreset === message || currentUserMessage === message) && { color: theme.primary, fontWeight: '500' }
                 ]}>
                   {message}
                 </Text>
@@ -208,6 +254,7 @@ export default function ReadyMatchScreen() {
               placeholderTextColor={theme.textSecondary}
               value={customMessage}
               onChangeText={setCustomMessage}
+              onSubmitEditing={handleCustomMessageSubmit}
               multiline={false}
             />
           </View>
@@ -384,6 +431,25 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontStyle: 'italic',
     lineHeight: 19,
+  },
+  messageBox: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xxl,
+    borderWidth: 1.5,
+  },
+  messageContent: {
+    flex: 1,
+  },
+  messageLabel: {
+    ...typography.caption,
+    marginBottom: spacing.xs,
+  },
+  messageText: {
+    ...typography.body,
+    fontWeight: '500',
   },
   coordinationSection: {
     marginBottom: spacing.xxl,

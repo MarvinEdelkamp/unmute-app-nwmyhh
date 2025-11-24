@@ -10,7 +10,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function ConfirmMatchScreen() {
-  const { matches, confirmMatch } = useSession();
+  const { matches, respondToMatch } = useSession();
   const { user } = useAuth();
   const { theme } = useTheme();
   const [visible, setVisible] = React.useState(true);
@@ -19,7 +19,7 @@ export default function ConfirmMatchScreen() {
   const hasConfirmedRef = React.useRef(false);
 
   const readyMatch = matches.find(
-    m => m.status === 'user_a_interested' || m.status === 'user_b_interested'
+    m => m.status === 'user_a_accepted' || m.status === 'user_b_accepted'
   );
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function ConfirmMatchScreen() {
       return;
     }
 
-    const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_ready');
+    const bothReady = matches.find(m => m.id === readyMatch.id && m.status === 'both_accepted');
     if (bothReady) {
       console.log('[ConfirmMatch] Both users ready, navigating to ready screen');
       hasConfirmedRef.current = true;
@@ -71,7 +71,16 @@ export default function ConfirmMatchScreen() {
     hasConfirmedRef.current = true;
     
     try {
-      await confirmMatch(readyMatch.id);
+      // If current user hasn't accepted yet, accept now
+      const isUserA = readyMatch.user_a_id === user?.id;
+      const hasAccepted = 
+        (isUserA && readyMatch.status === 'user_a_accepted') ||
+        (!isUserA && readyMatch.status === 'user_b_accepted');
+
+      if (!hasAccepted) {
+        await respondToMatch(readyMatch.id, true);
+      }
+      
       console.log('[ConfirmMatch] Match confirmed, navigating to ready screen');
       
       setTimeout(() => {

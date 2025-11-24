@@ -7,11 +7,10 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { WidgetProvider } from '@/contexts/WidgetContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Redirect } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { setupErrorLogging } from '@/utils/errorLogger';
 import * as SplashScreen from 'expo-splash-screen';
-import { lightColors } from '@/styles/commonStyles';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch((error) => {
@@ -21,7 +20,7 @@ SplashScreen.preventAutoHideAsync().catch((error) => {
 setupErrorLogging(); // abc
 
 function RootLayoutNav() {
-  const { user, loading, hasCompletedOnboarding } = useAuth();
+  const { user, profile, interests, loading, hasCompletedOnboarding } = useAuth();
   const [appReady, setAppReady] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
 
@@ -41,6 +40,8 @@ function RootLayoutNav() {
         console.log('[App] Starting app initialization...');
         console.log('[App] Auth loading state:', loading);
         console.log('[App] User:', user ? 'Logged in' : 'Not logged in');
+        console.log('[App] Profile:', profile ? 'exists' : 'null');
+        console.log('[App] Interests:', interests.length);
         console.log('[App] Onboarding completed:', hasCompletedOnboarding);
         
         // Wait for auth to finish loading
@@ -55,7 +56,7 @@ function RootLayoutNav() {
     }
 
     prepare();
-  }, [loading, user, hasCompletedOnboarding]);
+  }, [loading, user, profile, interests, hasCompletedOnboarding]);
 
   // Hide splash screen once app is ready
   useEffect(() => {
@@ -83,28 +84,26 @@ function RootLayoutNav() {
   }
 
   console.log('[App] App ready, rendering navigation');
-  console.log('[App] Final routing decision - hasCompletedOnboarding:', hasCompletedOnboarding, 'user:', user ? 'exists' : 'null');
+  console.log('[App] Final routing decision - hasCompletedOnboarding:', hasCompletedOnboarding, 'user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null');
 
   // Determine initial route based on app state
-  // Priority: onboarding -> signup -> interests -> main tabs
   let initialRoute = null;
   
-  // CRITICAL FIX: Check onboarding status FIRST
-  // If hasCompletedOnboarding is false, ALWAYS show onboarding
-  if (hasCompletedOnboarding === false) {
-    initialRoute = '/onboarding';
-    console.log('[App] ✅ REDIRECTING TO ONBOARDING - user has not completed onboarding');
-  } 
-  // Second check: Is user logged in?
-  else if (!user) {
+  // Check if user is not logged in
+  if (!user) {
     initialRoute = '/auth/signup';
     console.log('[App] Redirecting to signup - user not logged in');
-  } 
-  // Third check: Does user have interests?
-  else if (!user.interests || user.interests.length === 0) {
+  }
+  // Check if user has no profile
+  else if (!profile) {
+    initialRoute = '/auth/signup';
+    console.log('[App] Redirecting to signup - user has no profile');
+  }
+  // Check if user has no interests
+  else if (interests.length < 3) {
     initialRoute = '/auth/interests';
-    console.log('[App] Redirecting to interests - user has no interests');
-  } 
+    console.log('[App] Redirecting to interests - user has less than 3 interests');
+  }
   // All checks passed: show main app
   else {
     console.log('[App] Showing main tabs - all checks passed');
@@ -144,12 +143,3 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: lightColors.background,
-  },
-});

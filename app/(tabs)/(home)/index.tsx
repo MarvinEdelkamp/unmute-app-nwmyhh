@@ -10,24 +10,17 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { ProgressRing } from '@/components/ProgressRing';
 import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
 import { hapticFeedback } from '@/utils/haptics';
-import { storage } from '@/utils/storage';
-import { Match } from '@/types';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
-  const { isOpen, remainingTime, openSession, closeSession, extendSession, matches, refreshMatches } = useSession();
+  const { profile, interests } = useAuth();
+  const { isOpen, remainingTime, openSession, closeSession, extendSession, matches } = useSession();
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const glowAnim = React.useRef(new Animated.Value(0)).current;
-  const [isCreatingDemo, setIsCreatingDemo] = React.useState(false);
-  const navigationLockRef = React.useRef(false);
-  const lastMatchCheckRef = React.useRef<string>('');
-  const hasNavigatedRef = React.useRef(false);
   const mountedRef = React.useRef(true);
 
   useEffect(() => {
     console.log('[Home] Component mounted');
-    console.log('[Home] Session state - isOpen:', isOpen, 'remainingTime:', remainingTime);
     mountedRef.current = true;
     
     return () => {
@@ -35,10 +28,6 @@ export default function HomeScreen() {
       mountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    console.log('[Home] Timer update - isOpen:', isOpen, 'remainingTime:', remainingTime);
-  }, [isOpen, remainingTime]);
 
   useEffect(() => {
     if (isOpen) {
@@ -105,129 +94,32 @@ export default function HomeScreen() {
     hapticFeedback.success();
   };
 
-  const handleDemoMatch = async () => {
-    if (!user || isCreatingDemo || navigationLockRef.current) {
-      console.log('[Home] Demo button blocked - already in progress or no user');
-      return;
-    }
-    
-    console.log('[Home] Demo button pressed - creating mock match');
-    setIsCreatingDemo(true);
-    navigationLockRef.current = true;
-    hasNavigatedRef.current = false;
-    hapticFeedback.medium();
-    
-    const mockMatch: Match = {
-      id: `demo-${Date.now()}`,
-      sessionAId: 'demo-session-a',
-      sessionBId: 'demo-session-b',
-      userA: user,
-      userB: {
-        id: 'demo-user',
-        email: 'sophie@example.com',
-        name: 'Sophie',
-        interests: user.interests.slice(0, 2).length > 0 ? user.interests.slice(0, 2) : ['Hiking', 'Photography'],
-        createdAt: new Date().toISOString(),
-      },
-      sharedInterests: user.interests.slice(0, 2).length > 0 ? user.interests.slice(0, 2) : ['Hiking', 'Photography'],
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      const existingMatches = await storage.getItem<Match[]>('matches') || [];
-      const updatedMatches = [...existingMatches, mockMatch];
-      await storage.setItem('matches', updatedMatches);
-      
-      console.log('[Home] Demo match created successfully:', mockMatch.id);
-      
-      await refreshMatches();
-      
-      hapticFeedback.success();
-      
-      setTimeout(() => {
-        if (!hasNavigatedRef.current && mountedRef.current) {
-          console.log('[Home] Navigating to pending match screen from demo button');
-          hasNavigatedRef.current = true;
-          router.push('/match/pending');
-          
-          setTimeout(() => {
-            if (mountedRef.current) {
-              setIsCreatingDemo(false);
-              navigationLockRef.current = false;
-            }
-          }, 1500);
-        }
-      }, 400);
-    } catch (error) {
-      console.error('[Home] Error creating demo match:', error);
-      hapticFeedback.error();
-      setIsCreatingDemo(false);
-      navigationLockRef.current = false;
-      hasNavigatedRef.current = false;
-    }
-  };
-
-  const pendingMatches = matches.filter(m => m.status === 'pending' || m.status === 'user_a_interested' || m.status === 'user_b_interested');
-  const readyMatches = matches.filter(m => m.status === 'both_ready');
+  const pendingMatches = matches.filter(m => 
+    m.status === 'pending' || m.status === 'user_a_accepted' || m.status === 'user_b_accepted'
+  );
+  const readyMatches = matches.filter(m => m.status === 'both_accepted');
 
   useEffect(() => {
     if (!mountedRef.current) return;
-    
-    const matchStateId = `${pendingMatches.length}-${readyMatches.length}-${matches.map(m => m.id).join(',')}`;
-    
-    if (navigationLockRef.current || hasNavigatedRef.current || matchStateId === lastMatchCheckRef.current) {
-      return;
-    }
 
-    lastMatchCheckRef.current = matchStateId;
-
-    if (pendingMatches.length > 0 && !isCreatingDemo) {
+    if (pendingMatches.length > 0) {
       console.log('[Home] Auto-navigating to pending match');
-      hasNavigatedRef.current = true;
-      navigationLockRef.current = true;
       hapticFeedback.success();
-      
       setTimeout(() => {
         if (mountedRef.current) {
           router.push('/match/pending');
-          setTimeout(() => {
-            if (mountedRef.current) {
-              navigationLockRef.current = false;
-            }
-          }, 1500);
         }
       }, 200);
-    } else if (readyMatches.length > 0 && !isCreatingDemo) {
+    } else if (readyMatches.length > 0) {
       console.log('[Home] Auto-navigating to ready match');
-      hasNavigatedRef.current = true;
-      navigationLockRef.current = true;
       hapticFeedback.success();
-      
       setTimeout(() => {
         if (mountedRef.current) {
           router.push('/match/ready');
-          setTimeout(() => {
-            if (mountedRef.current) {
-              navigationLockRef.current = false;
-            }
-          }, 1500);
         }
       }, 200);
     }
-  }, [matches, pendingMatches.length, readyMatches.length, isCreatingDemo]);
-
-  useEffect(() => {
-    const resetNavigation = () => {
-      if (mountedRef.current) {
-        hasNavigatedRef.current = false;
-      }
-    };
-    
-    const timer = setTimeout(resetNavigation, 2000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  }, [matches.length, pendingMatches.length, readyMatches.length]);
 
   const getInterestEmoji = (interest: string) => {
     const emojiMap: { [key: string]: string } = {
@@ -235,7 +127,7 @@ export default function HomeScreen() {
       'Running': '🏃',
       'Yoga': '🧘',
       'Cycling': '🚴',
-      'Bouldering': '🧗',
+      'Rock Climbing': '🧗',
       'Photography': '📷',
       'Coffee': '☕',
       'Music': '🎵',
@@ -255,6 +147,8 @@ export default function HomeScreen() {
   const maxTime = 45 * 60;
   const progress = isOpen && remainingTime > 0 ? remainingTime / maxTime : 0;
 
+  const userInterests = interests.map(i => i.interest_label || '').filter(Boolean);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -267,28 +161,12 @@ export default function HomeScreen() {
               size={13} 
               color={theme.textSecondary} 
             />
-            <Text style={[styles.location, { color: theme.textSecondary }]}>Munich</Text>
+            <Text style={[styles.location, { color: theme.textSecondary }]}>
+              {profile?.city || 'Nearby'}
+            </Text>
           </View>
         </View>
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            onPress={handleDemoMatch}
-            disabled={isCreatingDemo || navigationLockRef.current}
-            style={[
-              styles.demoButton, 
-              { backgroundColor: theme.surface, borderColor: theme.primary }, 
-              shadows.sm,
-              (isCreatingDemo || navigationLockRef.current) && { opacity: 0.6 }
-            ]}
-          >
-            <IconSymbol 
-              ios_icon_name="sparkles" 
-              android_material_icon_name="auto_awesome" 
-              size={18} 
-              color={theme.primary} 
-            />
-            <Text style={[styles.demoButtonText, { color: theme.primary }]}>Demo</Text>
-          </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => {
               hapticFeedback.light();
@@ -426,12 +304,12 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {user && user.interests && user.interests.length > 0 && (
+        {userInterests.length > 0 && (
           <View style={styles.interestsSection}>
             <Text style={[styles.interestsTitle, { color: theme.text }]}>Your interests</Text>
             <View style={styles.interestsGrid}>
-              {user.interests.map((interest, index) => (
-                <View key={`user-interest-${user.id}-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
+              {userInterests.map((interest, index) => (
+                <View key={`user-interest-${index}-${interest}`} style={[styles.interestChip, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
                   <Text style={styles.interestEmoji}>{getInterestEmoji(interest)}</Text>
                   <Text style={[styles.interestText, { color: theme.text }]}>{interest}</Text>
                 </View>
@@ -471,19 +349,6 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-  },
-  demoButtonText: {
-    ...typography.caption,
-    fontWeight: '600',
   },
   settingsButton: {
     padding: spacing.sm,

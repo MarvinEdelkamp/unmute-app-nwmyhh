@@ -1,126 +1,198 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/types';
-import { storage } from '@/utils/storage';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { errorHandler } from '@/utils/errorHandler';
-import { validation, sanitize } from '@/utils/validation';
+import { Alert } from 'react-native';
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  display_name: string;
+  photo_url: string | null;
+  city: string | null;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface UserInterest {
+  id: string;
+  profile_id: string;
+  interest_id: string | null;
+  interest_label?: string;
+  free_text_label: string | null;
+  created_at: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
+  profile: Profile | null;
+  interests: UserInterest[];
   loading: boolean;
   hasCompletedOnboarding: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string) => Promise<void>;
+  signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  updateUser: (updates: Partial<User>) => Promise<void>;
-  completeOnboarding: () => Promise<void>;
+  createProfile: (displayName: string, photoUrl?: string) => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  setInterests: (interestLabels: string[]) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [interests, setInterestsState] = useState<UserInterest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    loadUser();
+    console.log('[AuthContext] Initializing Supabase auth...');
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AuthContext] Initial session:', session ? 'exists' : 'none');
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('[AuthContext] Auth state changed:', _event, session ? 'session exists' : 'no session');
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setInterestsState([]);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const loadUser = async () => {
+  const loadProfile = async (userId: string) => {
     try {
-      console.log('[AuthContext] Starting to load user data...');
-      setLoading(true);
+      console.log('[AuthContext] Loading profile for user:', userId);
       
-      // Load onboarding status FIRST - this is critical for routing
-      const onboardedData = await storage.getItem<boolean>('onboarded');
-      console.log('[AuthContext] Onboarding status from storage:', onboardedData);
-      
-      // Set onboarding status immediately - null means not set, false means not completed
-      if (onboardedData === true) {
-        setHasCompletedOnboarding(true);
-        console.log('[AuthContext] User has completed onboarding');
-      } else {
-        setHasCompletedOnboarding(false);
-        console.log('[AuthContext] User has NOT completed onboarding (or no data found)');
+      // Load profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
       }
-      
-      // Then load user data
-      const userData = await storage.getItem<User>('user');
-      if (userData) {
-        setUser(userData);
-        console.log('[AuthContext] User loaded successfully:', userData.id);
+
+      if (profileData) {
+        console.log('[AuthContext] Profile loaded:', profileData.id);
+        setProfile(profileData);
+
+        // Load interests
+        const { data: interestsData, error: interestsError } = await supabase
+          .from('user_interests')
+          .select(`
+            *,
+            interests (
+              label
+            )
+          `)
+          .eq('profile_id', profileData.id);
+
+        if (interestsError) {
+          throw interestsError;
+        }
+
+        const formattedInterests = (interestsData || []).map((ui: any) => ({
+          ...ui,
+          interest_label: ui.interests?.label || ui.free_text_label,
+        }));
+
+        console.log('[AuthContext] Interests loaded:', formattedInterests.length);
+        setInterestsState(formattedInterests);
       } else {
-        console.log('[AuthContext] No user data found');
+        console.log('[AuthContext] No profile found for user');
+        setProfile(null);
+        setInterestsState([]);
       }
     } catch (error) {
-      errorHandler.logError(error as Error, 'AUTH_LOAD_USER');
-      console.error('[AuthContext] Error loading user:', error);
-      // Set to false on error to show onboarding
-      setHasCompletedOnboarding(false);
+      console.error('[AuthContext] Error loading profile:', error);
+      errorHandler.logError(error as Error, 'AUTH_LOAD_PROFILE');
     } finally {
-      console.log('[AuthContext] Finished loading, setting loading to false');
       setLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const refreshProfile = async () => {
+    if (user) {
+      await loadProfile(user.id);
+    }
+  };
+
+  const signUp = async (email: string) => {
     try {
-      const sanitizedEmail = sanitize.email(email);
-      const sanitizedName = sanitize.text(name);
-
-      const emailValidation = validation.email(sanitizedEmail);
-      if (!emailValidation.valid) {
-        throw new Error(emailValidation.error);
-      }
-
-      const nameValidation = validation.name(sanitizedName);
-      if (!nameValidation.valid) {
-        throw new Error(nameValidation.error);
-      }
-
-      const newUser: User = {
-        id: Date.now().toString(),
-        email: sanitizedEmail,
-        name: sanitizedName,
-        interests: [],
-        createdAt: new Date().toISOString(),
-      };
+      console.log('[AuthContext] Signing up with email:', email);
       
-      const success = await storage.setItem('user', newUser);
-      if (!success) {
-        throw new Error('Failed to save user data');
-      }
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+        },
+      });
 
-      setUser(newUser);
-      console.log('[AuthContext] User signed up successfully:', newUser.id);
+      if (error) throw error;
+
+      Alert.alert(
+        'Check your email',
+        'We sent you a magic link to sign in. Please check your email and click the link to continue.',
+        [{ text: 'OK' }]
+      );
+
+      console.log('[AuthContext] Magic link sent successfully');
     } catch (error) {
+      console.error('[AuthContext] Sign up error:', error);
       errorHandler.logError(error as Error, 'AUTH_SIGNUP');
       throw error;
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string) => {
     try {
-      const sanitizedEmail = sanitize.email(email);
+      console.log('[AuthContext] Signing in with email:', email);
+      
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+        },
+      });
 
-      const emailValidation = validation.email(sanitizedEmail);
-      if (!emailValidation.valid) {
-        throw new Error(emailValidation.error);
-      }
+      if (error) throw error;
 
-      const userData = await storage.getItem<User>('user');
-      if (!userData) {
-        throw new Error('User not found. Please sign up first.');
-      }
+      Alert.alert(
+        'Check your email',
+        'We sent you a magic link to sign in. Please check your email and click the link to continue.',
+        [{ text: 'OK' }]
+      );
 
-      if (userData.email !== sanitizedEmail) {
-        throw new Error('Invalid email or password');
-      }
-
-      setUser(userData);
-      console.log('[AuthContext] User signed in successfully:', userData.id);
+      console.log('[AuthContext] Magic link sent successfully');
     } catch (error) {
+      console.error('[AuthContext] Sign in error:', error);
       errorHandler.logError(error as Error, 'AUTH_SIGNIN');
       throw error;
     }
@@ -128,100 +200,155 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const success = await Promise.all([
-        storage.removeItem('user'),
-        storage.removeItem('onboarded'),
-        storage.removeItem('session'),
-        storage.removeItem('matches'),
-      ]);
-
-      if (success.every(s => s)) {
-        setUser(null);
-        setHasCompletedOnboarding(false);
-        console.log('[AuthContext] User signed out successfully');
-      } else {
-        throw new Error('Failed to clear all user data');
-      }
+      console.log('[AuthContext] Signing out...');
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      setProfile(null);
+      setInterestsState([]);
+      console.log('[AuthContext] Signed out successfully');
     } catch (error) {
+      console.error('[AuthContext] Sign out error:', error);
       errorHandler.logError(error as Error, 'AUTH_SIGNOUT');
       throw error;
     }
   };
 
-  const updateUser = async (updates: Partial<User>) => {
+  const createProfile = async (displayName: string, photoUrl?: string) => {
     try {
       if (!user) {
         throw new Error('No user logged in');
       }
 
-      if (updates.name) {
-        const sanitizedName = sanitize.text(updates.name);
-        const nameValidation = validation.name(sanitizedName);
-        if (!nameValidation.valid) {
-          throw new Error(nameValidation.error);
-        }
-        updates.name = sanitizedName;
-      }
+      console.log('[AuthContext] Creating profile for user:', user.id);
 
-      if (updates.email) {
-        const sanitizedEmail = sanitize.email(updates.email);
-        const emailValidation = validation.email(sanitizedEmail);
-        if (!emailValidation.valid) {
-          throw new Error(emailValidation.error);
-        }
-        updates.email = sanitizedEmail;
-      }
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          display_name: displayName,
+          photo_url: photoUrl || null,
+        })
+        .select()
+        .single();
 
-      if (updates.interests) {
-        const interestsValidation = validation.interests(updates.interests);
-        if (!interestsValidation.valid) {
-          throw new Error(interestsValidation.error);
-        }
-      }
-      
-      const updatedUser = { ...user, ...updates };
-      const success = await storage.setItem('user', updatedUser);
-      
-      if (!success) {
-        throw new Error('Failed to update user data');
-      }
+      if (error) throw error;
 
-      setUser(updatedUser);
-      console.log('[AuthContext] User updated successfully:', updatedUser.id);
+      console.log('[AuthContext] Profile created:', data.id);
+      setProfile(data);
     } catch (error) {
-      errorHandler.logError(error as Error, 'AUTH_UPDATE_USER');
+      console.error('[AuthContext] Create profile error:', error);
+      errorHandler.logError(error as Error, 'AUTH_CREATE_PROFILE');
       throw error;
     }
   };
 
-  const completeOnboarding = async () => {
+  const updateProfile = async (updates: Partial<Profile>) => {
     try {
-      console.log('[AuthContext] Marking onboarding as complete...');
-      const success = await storage.setItem('onboarded', true);
-      if (!success) {
-        throw new Error('Failed to save onboarding status');
+      if (!user || !profile) {
+        throw new Error('No user or profile');
       }
-      setHasCompletedOnboarding(true);
-      console.log('[AuthContext] Onboarding completed successfully');
+
+      console.log('[AuthContext] Updating profile:', profile.id);
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[AuthContext] Profile updated');
+      setProfile(data);
     } catch (error) {
-      errorHandler.logError(error as Error, 'AUTH_COMPLETE_ONBOARDING');
+      console.error('[AuthContext] Update profile error:', error);
+      errorHandler.logError(error as Error, 'AUTH_UPDATE_PROFILE');
       throw error;
     }
   };
 
-  console.log('[AuthContext] Current state - loading:', loading, 'user:', user ? 'exists' : 'null', 'onboarded:', hasCompletedOnboarding);
+  const setInterests = async (interestLabels: string[]) => {
+    try {
+      if (!profile) {
+        throw new Error('No profile');
+      }
+
+      console.log('[AuthContext] Setting interests:', interestLabels);
+
+      // Delete existing interests
+      const { error: deleteError } = await supabase
+        .from('user_interests')
+        .delete()
+        .eq('profile_id', profile.id);
+
+      if (deleteError) throw deleteError;
+
+      // Get all interests from database
+      const { data: allInterests, error: interestsError } = await supabase
+        .from('interests')
+        .select('*');
+
+      if (interestsError) throw interestsError;
+
+      // Prepare new interests
+      const newInterests = interestLabels.map(label => {
+        const interest = allInterests?.find(i => i.label === label);
+        return {
+          profile_id: profile.id,
+          interest_id: interest?.id || null,
+          free_text_label: interest ? null : label,
+        };
+      });
+
+      // Insert new interests
+      const { data, error: insertError } = await supabase
+        .from('user_interests')
+        .insert(newInterests)
+        .select(`
+          *,
+          interests (
+            label
+          )
+        `);
+
+      if (insertError) throw insertError;
+
+      const formattedInterests = (data || []).map((ui: any) => ({
+        ...ui,
+        interest_label: ui.interests?.label || ui.free_text_label,
+      }));
+
+      console.log('[AuthContext] Interests set successfully');
+      setInterestsState(formattedInterests);
+    } catch (error) {
+      console.error('[AuthContext] Set interests error:', error);
+      errorHandler.logError(error as Error, 'AUTH_SET_INTERESTS');
+      throw error;
+    }
+  };
+
+  const hasCompletedOnboarding = !!(user && profile && interests.length >= 3);
+
+  console.log('[AuthContext] State - user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null', 'interests:', interests.length, 'onboarded:', hasCompletedOnboarding);
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        profile,
+        interests,
         loading,
-        hasCompletedOnboarding: hasCompletedOnboarding === true,
+        hasCompletedOnboarding,
         signUp,
         signIn,
         signOut,
-        updateUser,
-        completeOnboarding,
+        createProfile,
+        updateProfile,
+        setInterests,
+        refreshProfile,
       }}
     >
       {children}
@@ -232,17 +359,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // Return safe defaults instead of throwing
     console.warn('[AuthContext] useAuth must be used within an AuthProvider, using defaults');
     return {
       user: null,
+      profile: null,
+      interests: [],
       loading: false,
       hasCompletedOnboarding: false,
       signUp: async () => {},
       signIn: async () => {},
       signOut: async () => {},
-      updateUser: async () => {},
-      completeOnboarding: async () => {},
+      createProfile: async () => {},
+      updateProfile: async () => {},
+      setInterests: async () => {},
+      refreshProfile: async () => {},
     };
   }
   return context;

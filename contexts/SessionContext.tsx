@@ -1,21 +1,31 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import * as Location from 'expo-location';
-import { Session, Match } from '@/types';
-import { useAuth } from './AuthContext';
-import { storage } from '@/utils/storage';
+import { supabase } from '@/lib/supabase';
+import { useAuth, Profile } from './AuthContext';
 import { errorHandler } from '@/utils/errorHandler';
+import { Database } from '@/types/database';
+
+type SessionRow = Database['public']['Tables']['sessions']['Row'];
+type MatchRow = Database['public']['Tables']['matches']['Row'];
+
+export interface MatchWithProfiles extends MatchRow {
+  user_a_profile: Profile;
+  user_b_profile: Profile;
+  user_a_interests: string[];
+  user_b_interests: string[];
+}
 
 interface SessionContextType {
-  session: Session | null;
-  matches: Match[];
+  session: SessionRow | null;
+  matches: MatchWithProfiles[];
   isOpen: boolean;
   remainingTime: number;
   openSession: () => Promise<void>;
   closeSession: () => Promise<void>;
   extendSession: () => Promise<void>;
   respondToMatch: (matchId: string, interested: boolean) => Promise<void>;
-  confirmMatch: (matchId: string) => Promise<void>;
+  updateMatchMessage: (matchId: string, message: string) => Promise<void>;
   closeMatch: (matchId: string) => Promise<void>;
   refreshMatches: () => Promise<void>;
 }
@@ -23,37 +33,42 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [session, setSession] = useState<Session | null>(null);
-  const [matches, setMatches] = useState<Match[]>([]);
+  const { user, profile } = useAuth();
+  const [session, setSession] = useState<SessionRow | null>(null);
+  const [matches, setMatches] = useState<MatchWithProfiles[]>([]);
   const [remainingTime, setRemainingTime] = useState(0);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const matchCheckInterval = useRef<NodeJS.Timeout | null>(null);
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
   const isCleaningUp = useRef(false);
+  const mountedRef = useRef(true);
 
-  const isOpen = session?.status === 'open';
+  const isOpen = session?.is_open || false;
 
   useEffect(() => {
     console.log('[SessionContext] Initializing...');
-    loadSession();
-    loadMatches();
+    mountedRef.current = true;
+    
+    if (user && profile) {
+      loadSession();
+      loadMatches();
+      subscribeToMatches();
+    }
 
     return () => {
       console.log('[SessionContext] Cleaning up...');
+      mountedRef.current = false;
       cleanup();
     };
-  }, []);
+  }, [user?.id, profile?.id]);
 
   useEffect(() => {
     if (isOpen && session && !isCleaningUp.current) {
       console.log('[SessionContext] Session is open, starting tracking');
-      console.log('[SessionContext] Session expires at:', session.expiresAt);
       startLocationTracking();
       startMatchChecking();
       startTimer();
     } else {
-      console.log('[SessionContext] Session is closed, stopping tracking');
       stopLocationTracking();
       stopMatchChecking();
       stopTimer();
@@ -64,7 +79,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         cleanup();
       }
     };
-  }, [isOpen, session]);
+  }, [isOpen, session?.id]);
 
   const cleanup = () => {
     isCleaningUp.current = true;
@@ -78,80 +93,165 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const loadSession = async () => {
     try {
-      console.log('[SessionContext] Loading session from storage...');
-      const sessionData = await storage.getItem<Session>('session');
-      if (sessionData) {
+      if (!user || !profile) return;
+
+      console.log('[SessionContext] Loading session...');
+      
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_open', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
         const now = new Date();
-        const expiresAt = new Date(sessionData.expiresAt);
+        const closesAt = new Date(data.closes_at);
         
-        console.log('[SessionContext] Session found - now:', now.toISOString(), 'expires:', expiresAt.toISOString());
-        
-        if (now < expiresAt && sessionData.status === 'open') {
-          setSession(sessionData);
-          
-          // Calculate initial remaining time
-          const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+        if (now < closesAt) {
+          setSession(data);
+          const remaining = Math.max(0, Math.floor((closesAt.getTime() - now.getTime()) / 1000));
           setRemainingTime(remaining);
-          
-          console.log('[SessionContext] Session loaded successfully:', sessionData.id, 'remaining:', remaining, 'seconds');
+          console.log('[SessionContext] Session loaded:', data.id, 'remaining:', remaining);
         } else {
-          await storage.removeItem('session');
-          console.log('[SessionContext] Expired session removed');
+          // Close expired session
+          await supabase
+            .from('sessions')
+            .update({ is_open: false })
+            .eq('id', data.id);
+          console.log('[SessionContext] Expired session closed');
         }
-      } else {
-        console.log('[SessionContext] No session found in storage');
       }
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_LOAD');
       console.error('[SessionContext] Error loading session:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOAD');
     }
   };
 
   const loadMatches = async () => {
     try {
-      console.log('[SessionContext] Loading matches from storage...');
-      const matchesData = await storage.getItem<Match[]>('matches');
-      if (matchesData && Array.isArray(matchesData)) {
-        setMatches(matchesData);
-        console.log('[SessionContext] Matches loaded successfully:', matchesData.length);
-      } else {
-        console.log('[SessionContext] No matches found in storage');
-      }
+      if (!user) return;
+
+      console.log('[SessionContext] Loading matches...');
+      
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          user_a_profile:profiles!matches_user_a_id_fkey(*),
+          user_b_profile:profiles!matches_user_b_id_fkey(*)
+        `)
+        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+        .in('status', ['pending', 'user_a_accepted', 'user_b_accepted', 'both_accepted'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Load interests for each match
+      const matchesWithInterests = await Promise.all(
+        (data || []).map(async (match: any) => {
+          const [userAInterests, userBInterests] = await Promise.all([
+            loadUserInterests(match.user_a_profile.id),
+            loadUserInterests(match.user_b_profile.id),
+          ]);
+
+          return {
+            ...match,
+            user_a_interests: userAInterests,
+            user_b_interests: userBInterests,
+          };
+        })
+      );
+
+      setMatches(matchesWithInterests);
+      console.log('[SessionContext] Matches loaded:', matchesWithInterests.length);
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_LOAD_MATCHES');
       console.error('[SessionContext] Error loading matches:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOAD_MATCHES');
     }
   };
 
+  const loadUserInterests = async (profileId: string): Promise<string[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_interests')
+        .select(`
+          *,
+          interests (
+            label
+          )
+        `)
+        .eq('profile_id', profileId);
+
+      if (error) throw error;
+
+      return (data || []).map((ui: any) => ui.interests?.label || ui.free_text_label);
+    } catch (error) {
+      console.error('[SessionContext] Error loading user interests:', error);
+      return [];
+    }
+  };
+
+  const subscribeToMatches = () => {
+    if (!user) return;
+
+    console.log('[SessionContext] Subscribing to match updates...');
+
+    const subscription = supabase
+      .channel('matches')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches',
+          filter: `user_a_id=eq.${user.id}`,
+        },
+        () => {
+          console.log('[SessionContext] Match update received (user A)');
+          loadMatches();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches',
+          filter: `user_b_id=eq.${user.id}`,
+        },
+        () => {
+          console.log('[SessionContext] Match update received (user B)');
+          loadMatches();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  };
+
   const refreshMatches = async () => {
-    console.log('[SessionContext] Refreshing matches from storage');
+    console.log('[SessionContext] Refreshing matches');
     await loadMatches();
   };
 
   const startTimer = () => {
-    if (timerInterval.current) {
-      console.log('[SessionContext] Timer already running');
-      return;
-    }
+    if (timerInterval.current || !session) return;
     
     console.log('[SessionContext] Starting timer');
     
-    // Calculate initial remaining time immediately
-    if (session) {
-      const now = new Date();
-      const expiresAt = new Date(session.expiresAt);
-      const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
-      setRemainingTime(remaining);
-      console.log('[SessionContext] Initial remaining time:', remaining, 'seconds');
-    }
-    
-    timerInterval.current = setInterval(() => {
-      if (session && !isCleaningUp.current) {
+    const updateTimer = () => {
+      if (session && !isCleaningUp.current && mountedRef.current) {
         const now = new Date();
-        const expiresAt = new Date(session.expiresAt);
-        const remaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+        const closesAt = new Date(session.closes_at);
+        const remaining = Math.max(0, Math.floor((closesAt.getTime() - now.getTime()) / 1000));
         
-        console.log('[SessionContext] Timer tick - remaining:', remaining, 'seconds');
         setRemainingTime(remaining);
         
         if (remaining === 0) {
@@ -159,7 +259,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           closeSession();
         }
       }
-    }, 1000);
+    };
+
+    updateTimer();
+    timerInterval.current = setInterval(updateTimer, 1000);
   };
 
   const stopTimer = () => {
@@ -173,10 +276,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const startLocationTracking = async () => {
     try {
-      if (locationSubscription.current) {
-        console.log('[SessionContext] Location tracking already active');
-        return;
-      }
+      if (locationSubscription.current || !session) return;
 
       console.log('[SessionContext] Requesting location permissions...');
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -198,17 +298,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           distanceInterval: 10,
         },
         (location) => {
-          if (!isCleaningUp.current) {
-            console.log('[SessionContext] Location updated:', location.coords.latitude, location.coords.longitude);
+          if (!isCleaningUp.current && mountedRef.current) {
             updateLocation(location.coords.latitude, location.coords.longitude);
           }
         }
       );
 
-      console.log('[SessionContext] Location tracking started successfully');
+      // Get initial location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      await updateLocation(location.coords.latitude, location.coords.longitude);
+
+      console.log('[SessionContext] Location tracking started');
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_LOCATION_START');
       console.error('[SessionContext] Error starting location tracking:', error);
+      errorHandler.logError(error as Error, 'SESSION_LOCATION_START');
     }
   };
 
@@ -222,30 +327,38 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const updateLocation = async (latitude: number, longitude: number) => {
     try {
-      if (session && !isCleaningUp.current) {
-        const updatedSession = { ...session, latitude, longitude };
-        setSession(updatedSession);
-        await storage.setItem('session', updatedSession);
-        console.log('[SessionContext] Location updated in session');
-      }
+      if (!session || isCleaningUp.current) return;
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          location: `POINT(${longitude} ${latitude})`,
+        })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      console.log('[SessionContext] Location updated');
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_UPDATE_LOCATION');
       console.error('[SessionContext] Error updating location:', error);
+      errorHandler.logError(error as Error, 'SESSION_UPDATE_LOCATION');
     }
   };
 
   const startMatchChecking = () => {
-    if (matchCheckInterval.current) {
-      console.log('[SessionContext] Match checking already active');
-      return;
-    }
+    if (matchCheckInterval.current) return;
     
     console.log('[SessionContext] Starting match checking');
+    
+    // Check immediately
+    checkForMatches();
+    
+    // Then check every 12 seconds
     matchCheckInterval.current = setInterval(() => {
-      if (!isCleaningUp.current) {
+      if (!isCleaningUp.current && mountedRef.current) {
         checkForMatches();
       }
-    }, 45000);
+    }, 12000);
   };
 
   const stopMatchChecking = () => {
@@ -258,72 +371,59 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const checkForMatches = async () => {
     try {
-      console.log('[SessionContext] Checking for matches...');
-      if (Math.random() > 0.9 && user && !isCleaningUp.current) {
-        const mockMatch: Match = {
-          id: Date.now().toString(),
-          sessionAId: session?.id || '',
-          sessionBId: 'mock-session-b',
-          userA: user,
-          userB: {
-            id: 'mock-user',
-            email: 'mock@example.com',
-            name: 'Sophie',
-            interests: user.interests.slice(0, 2),
-            createdAt: new Date().toISOString(),
-          },
-          sharedInterests: user.interests.slice(0, 2),
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-        };
+      if (!session || !user || !profile) return;
 
-        const updatedMatches = [...matches, mockMatch];
-        setMatches(updatedMatches);
-        await storage.setItem('matches', updatedMatches);
-        console.log('[SessionContext] New match created:', mockMatch.id);
+      console.log('[SessionContext] Checking for matches...');
+
+      // Call Edge Function to find matches
+      const { data, error } = await supabase.functions.invoke('find-matches', {
+        body: { session_id: session.id },
+      });
+
+      if (error) throw error;
+
+      if (data?.match_created) {
+        console.log('[SessionContext] New match created!');
+        await loadMatches();
       }
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_CHECK_MATCHES');
       console.error('[SessionContext] Error checking for matches:', error);
+      errorHandler.logError(error as Error, 'SESSION_CHECK_MATCHES');
     }
   };
 
   const openSession = async () => {
     try {
-      if (!user) {
-        throw new Error('No user logged in');
+      if (!user || !profile) {
+        throw new Error('No user or profile');
       }
 
       console.log('[SessionContext] Opening session...');
-      const settingsData = await storage.getItem<{ defaultOpenTime: number }>('settings');
-      const defaultOpenTime = settingsData?.defaultOpenTime || 45;
-      
+
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + defaultOpenTime * 60000);
+      const closesAt = new Date(now.getTime() + 45 * 60000);
 
-      console.log('[SessionContext] Creating session - now:', now.toISOString(), 'expires:', expiresAt.toISOString());
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          profile_id: profile.id,
+          is_open: true,
+          opened_at: now.toISOString(),
+          closes_at: closesAt.toISOString(),
+        })
+        .select()
+        .single();
 
-      const newSession: Session = {
-        id: Date.now().toString(),
-        userId: user.id,
-        startedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        status: 'open',
-      };
+      if (error) throw error;
 
-      const success = await storage.setItem('session', newSession);
-      if (!success) {
-        throw new Error('Failed to save session');
-      }
-
-      setSession(newSession);
-      
-      // Calculate and set initial remaining time
-      const remaining = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
+      setSession(data);
+      const remaining = Math.floor((closesAt.getTime() - now.getTime()) / 1000);
       setRemainingTime(remaining);
       
-      console.log('[SessionContext] Session opened successfully:', newSession.id, 'remaining:', remaining, 'seconds');
+      console.log('[SessionContext] Session opened:', data.id);
     } catch (error) {
+      console.error('[SessionContext] Error opening session:', error);
       errorHandler.logError(error as Error, 'SESSION_OPEN');
       errorHandler.showError('Failed to open session. Please try again.');
       throw error;
@@ -332,48 +432,58 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const closeSession = async () => {
     try {
-      if (session) {
-        console.log('[SessionContext] Closing session...');
-        isCleaningUp.current = true;
-        await storage.removeItem('session');
-        setSession(null);
-        setRemainingTime(0);
-        console.log('[SessionContext] Session closed successfully');
-        setTimeout(() => {
-          isCleaningUp.current = false;
-        }, 100);
-      }
+      if (!session) return;
+
+      console.log('[SessionContext] Closing session...');
+      isCleaningUp.current = true;
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({ is_open: false, closes_at: new Date().toISOString() })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      setSession(null);
+      setRemainingTime(0);
+      console.log('[SessionContext] Session closed');
+      
+      setTimeout(() => {
+        isCleaningUp.current = false;
+      }, 100);
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_CLOSE');
       console.error('[SessionContext] Error closing session:', error);
+      errorHandler.logError(error as Error, 'SESSION_CLOSE');
       isCleaningUp.current = false;
     }
   };
 
   const extendSession = async () => {
     try {
-      if (session) {
-        console.log('[SessionContext] Extending session...');
-        const currentExpiresAt = new Date(session.expiresAt);
-        const newExpiresAt = new Date(currentExpiresAt.getTime() + 30 * 60000);
-        
-        const extendedSession = { ...session, expiresAt: newExpiresAt.toISOString() };
-        const success = await storage.setItem('session', extendedSession);
-        
-        if (!success) {
-          throw new Error('Failed to extend session');
-        }
+      if (!session) return;
 
-        setSession(extendedSession);
-        
-        // Recalculate remaining time
-        const now = new Date();
-        const remaining = Math.floor((newExpiresAt.getTime() - now.getTime()) / 1000);
-        setRemainingTime(remaining);
-        
-        console.log('[SessionContext] Session extended successfully, new remaining:', remaining, 'seconds');
-      }
+      console.log('[SessionContext] Extending session...');
+      
+      const currentClosesAt = new Date(session.closes_at);
+      const newClosesAt = new Date(currentClosesAt.getTime() + 30 * 60000);
+
+      const { data, error } = await supabase
+        .from('sessions')
+        .update({ closes_at: newClosesAt.toISOString() })
+        .eq('id', session.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSession(data);
+      const now = new Date();
+      const remaining = Math.floor((newClosesAt.getTime() - now.getTime()) / 1000);
+      setRemainingTime(remaining);
+      
+      console.log('[SessionContext] Session extended');
     } catch (error) {
+      console.error('[SessionContext] Error extending session:', error);
       errorHandler.logError(error as Error, 'SESSION_EXTEND');
       errorHandler.showError('Failed to extend session. Please try again.');
       throw error;
@@ -382,76 +492,71 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const respondToMatch = async (matchId: string, interested: boolean) => {
     try {
-      console.log('[SessionContext] Responding to match:', matchId, 'interested:', interested);
-      
-      const currentMatches = await storage.getItem<Match[]>('matches') || [];
-      const matchIndex = currentMatches.findIndex(m => m.id === matchId);
-      
-      if (matchIndex === -1) {
-        throw new Error('Match not found');
-      }
+      if (!user) return;
 
-      const match = currentMatches[matchIndex];
+      console.log('[SessionContext] Responding to match:', matchId, 'interested:', interested);
+
+      const match = matches.find(m => m.id === matchId);
+      if (!match) throw new Error('Match not found');
+
       let newStatus = match.status;
 
       if (!interested) {
         newStatus = 'declined';
       } else {
-        if (match.userA.id === user?.id) {
-          newStatus = match.status === 'user_b_interested' ? 'both_ready' : 'user_a_interested';
+        const isUserA = match.user_a_id === user.id;
+        const otherAccepted = isUserA 
+          ? match.status === 'user_b_accepted'
+          : match.status === 'user_a_accepted';
+
+        if (otherAccepted) {
+          newStatus = 'both_accepted';
         } else {
-          newStatus = match.status === 'user_a_interested' ? 'both_ready' : 'user_b_interested';
+          newStatus = isUserA ? 'user_a_accepted' : 'user_b_accepted';
         }
       }
 
-      console.log('[SessionContext] Updating match status from', match.status, 'to', newStatus);
+      const { error } = await supabase
+        .from('matches')
+        .update({ status: newStatus })
+        .eq('id', matchId);
 
-      const updatedMatch = { ...match, status: newStatus };
-      const updatedMatches = [...currentMatches];
-      updatedMatches[matchIndex] = updatedMatch;
+      if (error) throw error;
 
-      const success = await storage.setItem('matches', updatedMatches);
-      
-      if (!success) {
-        throw new Error('Failed to save match response');
-      }
-
-      setMatches(updatedMatches);
-      console.log('[SessionContext] Match response saved successfully');
+      console.log('[SessionContext] Match response saved');
+      await loadMatches();
     } catch (error) {
+      console.error('[SessionContext] Error responding to match:', error);
       errorHandler.logError(error as Error, 'SESSION_RESPOND_MATCH');
       errorHandler.showError('Failed to respond to match. Please try again.');
       throw error;
     }
   };
 
-  const confirmMatch = async (matchId: string) => {
+  const updateMatchMessage = async (matchId: string, message: string) => {
     try {
-      console.log('[SessionContext] Confirming match:', matchId);
-      
-      const currentMatches = await storage.getItem<Match[]>('matches') || [];
-      const matchIndex = currentMatches.findIndex(m => m.id === matchId);
-      
-      if (matchIndex === -1) {
-        throw new Error('Match not found');
-      }
+      if (!user) return;
 
-      const match = currentMatches[matchIndex];
-      const updatedMatch = { ...match, status: 'both_ready' as const };
-      const updatedMatches = [...currentMatches];
-      updatedMatches[matchIndex] = updatedMatch;
+      console.log('[SessionContext] Updating match message:', matchId);
 
-      const success = await storage.setItem('matches', updatedMatches);
-      
-      if (!success) {
-        throw new Error('Failed to confirm match');
-      }
+      const match = matches.find(m => m.id === matchId);
+      if (!match) throw new Error('Match not found');
 
-      setMatches(updatedMatches);
-      console.log('[SessionContext] Match confirmed successfully');
+      const isUserA = match.user_a_id === user.id;
+      const updateField = isUserA ? 'user_a_message' : 'user_b_message';
+
+      const { error } = await supabase
+        .from('matches')
+        .update({ [updateField]: message })
+        .eq('id', matchId);
+
+      if (error) throw error;
+
+      console.log('[SessionContext] Match message updated');
+      await loadMatches();
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_CONFIRM_MATCH');
-      errorHandler.showError('Failed to confirm match. Please try again.');
+      console.error('[SessionContext] Error updating match message:', error);
+      errorHandler.logError(error as Error, 'SESSION_UPDATE_MESSAGE');
       throw error;
     }
   };
@@ -459,25 +564,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const closeMatch = async (matchId: string) => {
     try {
       console.log('[SessionContext] Closing match:', matchId);
-      
-      const currentMatches = await storage.getItem<Match[]>('matches') || [];
-      const updatedMatches = currentMatches.filter(m => m.id !== matchId);
-      
-      const success = await storage.setItem('matches', updatedMatches);
-      
-      if (!success) {
-        throw new Error('Failed to close match');
-      }
 
-      setMatches(updatedMatches);
-      console.log('[SessionContext] Match closed successfully');
+      const { error } = await supabase
+        .from('matches')
+        .update({ status: 'expired' })
+        .eq('id', matchId);
+
+      if (error) throw error;
+
+      console.log('[SessionContext] Match closed');
+      await loadMatches();
     } catch (error) {
-      errorHandler.logError(error as Error, 'SESSION_CLOSE_MATCH');
       console.error('[SessionContext] Error closing match:', error);
+      errorHandler.logError(error as Error, 'SESSION_CLOSE_MATCH');
     }
   };
-
-  console.log('[SessionContext] Current state - isOpen:', isOpen, 'remainingTime:', remainingTime, 'matches:', matches.length);
 
   return (
     <SessionContext.Provider
@@ -490,7 +591,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         closeSession,
         extendSession,
         respondToMatch,
-        confirmMatch,
+        updateMatchMessage,
         closeMatch,
         refreshMatches,
       }}
@@ -513,7 +614,7 @@ export function useSession() {
       closeSession: async () => {},
       extendSession: async () => {},
       respondToMatch: async () => {},
-      confirmMatch: async () => {},
+      updateMatchMessage: async () => {},
       closeMatch: async () => {},
       refreshMatches: async () => {},
     };

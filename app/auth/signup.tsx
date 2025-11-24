@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Image, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, ScrollView, Image, Platform, KeyboardAvoidingView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
@@ -8,40 +8,18 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { validation, sanitize } from '@/utils/validation';
-import { errorHandler } from '@/utils/errorHandler';
 import { hapticFeedback } from '@/utils/haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { storage } from '@/utils/storage';
-import { User } from '@/types';
 
 export default function SignUpScreen() {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, user, profile, createProfile } = useAuth();
   const { theme } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
   const [isLogin, setIsLogin] = useState(false);
-
-  // Check if user already exists
-  useEffect(() => {
-    checkExistingUser();
-  }, []);
-
-  const checkExistingUser = async () => {
-    try {
-      const userData = await storage.getItem<User>('user');
-      if (userData) {
-        setIsLogin(true);
-        setEmail(userData.email);
-        console.log('[SignUp] Existing user found, switching to login mode');
-      }
-    } catch (error) {
-      console.error('[SignUp] Error checking existing user:', error);
-    }
-  };
+  const [step, setStep] = useState<'email' | 'profile'>('email');
 
   const handlePickImage = async () => {
     try {
@@ -57,34 +35,13 @@ export default function SignUpScreen() {
         hapticFeedback.success();
       }
     } catch (error) {
-      errorHandler.logError(error as Error, 'IMAGE_PICKER');
-      errorHandler.showError('Failed to pick image. Please try again.');
       console.error('Image picker error:', error);
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: { name?: string; email?: string } = {};
-
-    if (!isLogin) {
-      const nameValidation = validation.name(name);
-      if (!nameValidation.valid) {
-        newErrors.name = nameValidation.error;
-      }
-    }
-
-    const emailValidation = validation.email(email);
-    if (!emailValidation.valid) {
-      newErrors.email = emailValidation.error;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleContinue = async () => {
-    if (!validateForm()) {
-      hapticFeedback.warning();
+  const handleSendMagicLink = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
       return;
     }
 
@@ -93,53 +50,155 @@ export default function SignUpScreen() {
       hapticFeedback.medium();
       
       if (isLogin) {
-        await signIn(email, 'password123');
-        hapticFeedback.success();
-        router.replace('/(tabs)/(home)/');
+        await signIn(email);
       } else {
-        await signUp(email, 'password123', name);
-        hapticFeedback.success();
-        router.replace('/auth/interests');
+        await signUp(email);
       }
+      
+      hapticFeedback.success();
     } catch (error) {
       hapticFeedback.error();
-      const errorMessage = error instanceof Error ? error.message : isLogin ? 'Failed to sign in' : 'Failed to create profile';
-      errorHandler.showError(errorMessage);
-      console.error(isLogin ? 'Sign in error:' : 'Sign up error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send magic link';
+      Alert.alert('Error', errorMessage);
+      console.error('Magic link error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNameChange = (text: string) => {
-    setName(text);
-    if (errors.name) {
-      setErrors({ ...errors, name: undefined });
+  const handleCreateProfile = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
     }
-  };
 
-  const handleEmailChange = (text: string) => {
-    setEmail(text);
-    if (errors.email) {
-      setErrors({ ...errors, email: undefined });
+    try {
+      setLoading(true);
+      hapticFeedback.medium();
+      
+      await createProfile(name, avatar || undefined);
+      
+      hapticFeedback.success();
+      router.replace('/auth/interests');
+    } catch (error) {
+      hapticFeedback.error();
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create profile';
+      Alert.alert('Error', errorMessage);
+      console.error('Create profile error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    setErrors({});
     hapticFeedback.light();
   };
 
-  const isFormValid = isLogin 
-    ? email.trim().length > 0 && email.includes('@')
-    : name.trim().length > 0 && email.trim().length > 0 && email.includes('@');
+  // If user is logged in but no profile, show profile creation
+  if (user && !profile && step === 'email') {
+    setStep('profile');
+  }
+
+  if (step === 'profile') {
+    return (
+      <KeyboardAvoidingView 
+        style={[styles.container, { backgroundColor: theme.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.title, { color: theme.text }]}>Create your profile</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Just the basics</Text>
+
+          <View style={styles.form}>
+            <View style={styles.photoSection}>
+              <Text style={[styles.label, { color: theme.text }]}>Photo (optional)</Text>
+              <TouchableOpacity 
+                style={[styles.photoButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+                onPress={handlePickImage}
+              >
+                {avatar ? (
+                  <Image source={{ uri: avatar }} style={styles.avatarImage} />
+                ) : (
+                  <IconSymbol 
+                    ios_icon_name="camera.fill" 
+                    android_material_icon_name="photo_camera" 
+                    size={36} 
+                    color={theme.textSecondary} 
+                  />
+                )}
+              </TouchableOpacity>
+              <Text style={[styles.photoNote, { color: theme.textSecondary }]}>
+                Shared only with matches when you both say yes
+              </Text>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: theme.text }]}>First name or nickname</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <IconSymbol 
+                  ios_icon_name="person.fill" 
+                  android_material_icon_name="person" 
+                  size={20} 
+                  color={theme.textSecondary} 
+                />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  placeholder="e.g. Sophie"
+                  placeholderTextColor={theme.textSecondary}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleCreateProfile}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.primaryLight }]}>
+              <Text style={[styles.infoText, { color: theme.text }]}>
+                No bios, no follower counts. Unmute keeps profiles minimal so conversations stay real.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={[styles.bottomContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
+          <TouchableOpacity 
+            style={[
+              styles.button,
+              { backgroundColor: name.trim() ? theme.primary : theme.disabled },
+              name.trim() ? shadows.md : {},
+            ]}
+            onPress={handleCreateProfile}
+            disabled={!name.trim() || loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <LoadingSpinner size="small" />
+            ) : (
+              <Text style={[
+                styles.buttonText,
+                { color: name.trim() ? theme.card : theme.textTertiary }
+              ]}>
+                Continue
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
       style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
@@ -147,111 +206,51 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: theme.text }]}>
-          {isLogin ? 'Welcome back' : 'Create your profile'}
+          {isLogin ? 'Welcome back' : 'Get started'}
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {isLogin ? 'Sign in to continue' : 'Just the basics'}
+          {isLogin ? 'Sign in with your email' : 'Create your account'}
         </Text>
 
         <View style={styles.form}>
-          {!isLogin && (
-            <>
-              <View style={styles.photoSection}>
-                <Text style={[styles.label, { color: theme.text }]}>Photo (optional)</Text>
-                <TouchableOpacity 
-                  style={[styles.photoButton, { borderColor: theme.border, backgroundColor: theme.card }]}
-                  onPress={handlePickImage}
-                >
-                  {avatar ? (
-                    <Image source={{ uri: avatar }} style={styles.avatarImage} />
-                  ) : (
-                    <IconSymbol 
-                      ios_icon_name="camera.fill" 
-                      android_material_icon_name="photo_camera" 
-                      size={36} 
-                      color={theme.textSecondary} 
-                    />
-                  )}
-                </TouchableOpacity>
-                <Text style={[styles.photoNote, { color: theme.textSecondary }]}>
-                  Shared only with matches when you both say yes
-                </Text>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={[styles.label, { color: theme.text }]}>First name or nickname</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  { backgroundColor: theme.card, borderColor: errors.name ? theme.error : theme.border },
-                  errors.name && { backgroundColor: theme.errorLight }
-                ]}>
-                  <IconSymbol 
-                    ios_icon_name="person.fill" 
-                    android_material_icon_name="person" 
-                    size={20} 
-                    color={errors.name ? theme.error : theme.textSecondary} 
-                  />
-                  <TextInput
-                    style={[styles.input, { color: theme.text }]}
-                    placeholder="e.g. Sophie"
-                    placeholderTextColor={theme.textSecondary}
-                    value={name}
-                    onChangeText={handleNameChange}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    returnKeyType="next"
-                  />
-                </View>
-                {errors.name && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>{errors.name}</Text>
-                )}
-              </View>
-            </>
-          )}
-
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: theme.text }]}>Email address</Text>
-            <View style={[
-              styles.inputWrapper,
-              { backgroundColor: theme.card, borderColor: errors.email ? theme.error : theme.border },
-              errors.email && { backgroundColor: theme.errorLight }
-            ]}>
+            <View style={[styles.inputWrapper, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <IconSymbol 
                 ios_icon_name="envelope.fill" 
                 android_material_icon_name="email" 
                 size={20} 
-                color={errors.email ? theme.error : theme.textSecondary} 
+                color={theme.textSecondary} 
               />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
                 placeholder="your@email.com"
                 placeholderTextColor={theme.textSecondary}
                 value={email}
-                onChangeText={handleEmailChange}
+                onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
                 returnKeyType="done"
-                onSubmitEditing={handleContinue}
+                onSubmitEditing={handleSendMagicLink}
               />
             </View>
-            {errors.email && (
-              <Text style={[styles.errorText, { color: theme.error }]}>{errors.email}</Text>
-            )}
-            {!errors.email && !isLogin && (
-              <Text style={[styles.inputNote, { color: theme.textSecondary }]}>
-                For account recovery only. Never shown to others
-              </Text>
-            )}
+            <Text style={[styles.inputNote, { color: theme.textSecondary }]}>
+              We&apos;ll send you a magic link to sign in
+            </Text>
           </View>
 
-          {!isLogin && (
-            <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.primaryLight }]}>
-              <Text style={[styles.infoText, { color: theme.text }]}>
-                No bios, no follower counts. Unmute keeps profiles minimal so conversations stay real.
-              </Text>
-            </View>
-          )}
+          <View style={[styles.infoBox, { backgroundColor: theme.secondary, borderColor: theme.primaryLight }]}>
+            <IconSymbol 
+              ios_icon_name="lock.fill" 
+              android_material_icon_name="lock" 
+              size={18} 
+              color={theme.primary} 
+            />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              No passwords needed. We&apos;ll email you a secure link to sign in.
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -259,11 +258,11 @@ export default function SignUpScreen() {
         <TouchableOpacity 
           style={[
             styles.button,
-            { backgroundColor: isFormValid ? theme.primary : theme.disabled },
-            isFormValid ? shadows.md : {},
+            { backgroundColor: email.trim() && email.includes('@') ? theme.primary : theme.disabled },
+            email.trim() && email.includes('@') ? shadows.md : {},
           ]}
-          onPress={handleContinue}
-          disabled={!isFormValid || loading}
+          onPress={handleSendMagicLink}
+          disabled={!email.trim() || !email.includes('@') || loading}
           activeOpacity={0.8}
         >
           {loading ? (
@@ -271,9 +270,9 @@ export default function SignUpScreen() {
           ) : (
             <Text style={[
               styles.buttonText,
-              { color: isFormValid ? theme.card : theme.textTertiary }
+              { color: email.trim() && email.includes('@') ? theme.card : theme.textTertiary }
             ]}>
-              {isLogin ? 'Sign In' : 'Continue'}
+              {isLogin ? 'Send magic link' : 'Continue'}
             </Text>
           )}
         </TouchableOpacity>
@@ -365,17 +364,16 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 20,
   },
-  errorText: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
   infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
     padding: spacing.lg + spacing.xs,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
   },
   infoText: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '400',
     lineHeight: 22,
