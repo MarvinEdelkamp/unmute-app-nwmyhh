@@ -24,7 +24,7 @@ export const lightColors = {
   
   // Accents
   secondary: '#EDF5F3',
-  accent: unmuteColors.primary,
+  accent: unmuteColors.accent,
   highlight: '#E8F3F1',
   
   // Status
@@ -59,7 +59,7 @@ export const darkColors = {
   primaryDark: '#3A7A6E',
   
   secondary: '#1F2D2A',
-  accent: '#5AAFA0',
+  accent: '#FFA94D',
   highlight: '#243330',
   
   error: '#FF6B6B',

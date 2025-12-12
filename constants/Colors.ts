@@ -7,6 +7,9 @@ export const unmuteColors = {
   primary: '#4A9B8E',
   primaryDark: '#244354',
   
+  // Secondary accent (for testing/special features)
+  accent: '#F59E0B',
+  
   // Backgrounds
   bgDefault: '#F6F7FA',
   surface: '#FFFFFF',

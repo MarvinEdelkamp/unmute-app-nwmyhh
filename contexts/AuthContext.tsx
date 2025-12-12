@@ -6,6 +6,7 @@ import { errorHandler } from '@/utils/errorHandler';
 import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
 export interface Profile {
   id: string;
@@ -43,6 +44,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Test emails that will bypass magic link in Expo Go
+const TEST_EMAILS = [
+  'AABB@test.com',
+  'test@test.com',
+  'demo@test.com',
+];
+
+// Check if we're running in Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -52,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log('[AuthContext] Initializing Supabase auth...');
+    console.log('[AuthContext] Running in Expo Go:', isExpoGo);
     
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -224,9 +236,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Dummy login function for testing in Expo Go
+  const dummyLogin = async (email: string) => {
+    console.log('[AuthContext] Using dummy login for testing in Expo Go');
+    
+    try {
+      // Create a mock session
+      const mockUser: SupabaseUser = {
+        id: `test-user-${email.replace(/[^a-zA-Z0-9]/g, '-')}`,
+        email: email,
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      };
+
+      // Set the mock user
+      setUser(mockUser);
+      
+      // Check if profile exists for this test user
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', mockUser.id)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('[AuthContext] Error checking for existing profile:', profileError);
+      }
+
+      if (existingProfile) {
+        console.log('[AuthContext] Found existing test profile');
+        setProfile(existingProfile);
+        
+        // Load interests
+        const { data: interestsData } = await supabase
+          .from('user_interests')
+          .select(`
+            *,
+            interests (
+              label
+            )
+          `)
+          .eq('profile_id', existingProfile.id);
+
+        const formattedInterests = (interestsData || []).map((ui: any) => ({
+          ...ui,
+          interest_label: ui.interests?.label || ui.free_text_label,
+        }));
+
+        setInterestsState(formattedInterests);
+      } else {
+        console.log('[AuthContext] No existing test profile, user will need to complete onboarding');
+        setProfile(null);
+        setInterestsState([]);
+      }
+
+      setLoading(false);
+
+      Alert.alert(
+        'Test Login Successful',
+        `You are now logged in with test account: ${email}\n\nThis is a dummy login for testing in Expo Go only.`,
+        [{ text: 'OK' }]
+      );
+
+      console.log('[AuthContext] Dummy login successful');
+    } catch (error) {
+      console.error('[AuthContext] Dummy login error:', error);
+      Alert.alert('Error', 'Failed to perform test login. Please try again.');
+      throw error;
+    }
+  };
+
   const signUp = async (email: string) => {
     try {
       console.log('[AuthContext] Signing up with email:', email);
+      
+      // Check if this is a test email in Expo Go
+      if (isExpoGo && TEST_EMAILS.includes(email)) {
+        console.log('[AuthContext] Test email detected in Expo Go, using dummy login');
+        await dummyLogin(email);
+        return;
+      }
       
       const redirectUrl = getRedirectUrl();
       console.log('[AuthContext] Using redirect URL:', redirectUrl);
@@ -271,6 +363,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('[AuthContext] Signing in with email:', email);
       
+      // Check if this is a test email in Expo Go
+      if (isExpoGo && TEST_EMAILS.includes(email)) {
+        console.log('[AuthContext] Test email detected in Expo Go, using dummy login');
+        await dummyLogin(email);
+        return;
+      }
+      
       const redirectUrl = getRedirectUrl();
       console.log('[AuthContext] Using redirect URL:', redirectUrl);
       
@@ -313,6 +412,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       console.log('[AuthContext] Signing out...');
+      
+      // For dummy login, just clear the state
+      if (isExpoGo && user && user.id.startsWith('test-user-')) {
+        console.log('[AuthContext] Clearing dummy login session');
+        setUser(null);
+        setProfile(null);
+        setInterestsState([]);
+        console.log('[AuthContext] Signed out successfully (dummy)');
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       

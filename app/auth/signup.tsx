@@ -6,6 +6,9 @@ import { colors, spacing, typography, borderRadius, layout } from '@/styles/comm
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
+import Constants from 'expo-constants';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export default function SignUpScreen() {
   const { signUp } = useAuth();
@@ -29,6 +32,7 @@ export default function SignUpScreen() {
       setLoading(true);
       await signUp(email.trim());
       // Don't navigate - user needs to click the magic link first
+      // (unless it's a test email in Expo Go, which will auto-login)
     } catch (error) {
       console.log('Sign up error:', error);
       // Error is already handled in AuthContext with Alert
@@ -45,7 +49,7 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Create account</Text>
-        <Text style={styles.subtitle}>Enter your email to get started</Text>
+        <Text style={styles.subtitle}>Join Unmute to meet people nearby</Text>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
@@ -79,9 +83,24 @@ export default function SignUpScreen() {
               color={colors.primary} 
             />
             <Text style={styles.infoText}>
-              We&apos;ll send you a magic link to sign in. No password needed!
+              We&apos;ll send you a magic link to get started. No password needed!
             </Text>
           </View>
+
+          {isExpoGo && (
+            <View style={styles.testInfoBox}>
+              <IconSymbol 
+                ios_icon_name="flask.fill" 
+                android_material_icon_name="science" 
+                size={20} 
+                color={colors.accent} 
+              />
+              <Text style={styles.testInfoText}>
+                <Text style={styles.testInfoBold}>Testing in Expo Go?</Text>{'\n'}
+                Use AABB@test.com, test@test.com, or demo@test.com for instant login without email verification.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -92,7 +111,7 @@ export default function SignUpScreen() {
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'Sending magic link...' : 'Continue with email'}
+            {loading ? 'Creating account...' : 'Continue with email'}
           </Text>
         </TouchableOpacity>
 
@@ -179,6 +198,27 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  testInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    backgroundColor: colors.accent + '15',
+    borderWidth: 1.5,
+    borderColor: colors.accent + '40',
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+  },
+  testInfoText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  testInfoBold: {
+    fontWeight: '600',
+    color: colors.accent,
   },
   bottomContainer: {
     position: 'absolute',
