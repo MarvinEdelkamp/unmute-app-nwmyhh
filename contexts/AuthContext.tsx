@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Profile {
   id: string;
@@ -54,31 +55,82 @@ const TEST_EMAILS = [
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
+// Storage keys for dummy login
+const DUMMY_PROFILE_KEY = 'dummy_profile';
+const DUMMY_INTERESTS_KEY = 'dummy_interests';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [interests, setInterestsState] = useState<UserInterest[]>([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [isDummySession, setIsDummySession] = useState(false);
 
   useEffect(() => {
     console.log('[AuthContext] Initializing Supabase auth...');
     console.log('[AuthContext] Running in Expo Go:', isExpoGo);
     
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[AuthContext] Initial session:', session ? 'exists' : 'none');
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setLoading(false);
+    // Check for existing dummy session first
+    const checkDummySession = async () => {
+      try {
+        const dummyUserStr = await AsyncStorage.getItem('dummy_user');
+        if (dummyUserStr) {
+          console.log('[AuthContext] Found existing dummy session');
+          const dummyUser = JSON.parse(dummyUserStr);
+          setUser(dummyUser);
+          setIsDummySession(true);
+          
+          // Load dummy profile and interests
+          const dummyProfileStr = await AsyncStorage.getItem(DUMMY_PROFILE_KEY);
+          const dummyInterestsStr = await AsyncStorage.getItem(DUMMY_INTERESTS_KEY);
+          
+          if (dummyProfileStr) {
+            setProfile(JSON.parse(dummyProfileStr));
+          }
+          
+          if (dummyInterestsStr) {
+            setInterestsState(JSON.parse(dummyInterestsStr));
+          }
+          
+          setLoading(false);
+          return true;
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error checking dummy session:', error);
       }
-    });
+      return false;
+    };
+    
+    // Initialize auth
+    const initAuth = async () => {
+      const hasDummySession = await checkDummySession();
+      
+      if (!hasDummySession) {
+        // Get initial session from Supabase
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          console.log('[AuthContext] Initial session:', session ? 'exists' : 'none');
+          setSession(session);
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            loadProfile(session.user.id);
+          } else {
+            setLoading(false);
+          }
+        });
+      }
+    };
+    
+    initAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes (only for real Supabase auth)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Ignore auth changes if we have a dummy session
+      if (isDummySession) {
+        console.log('[AuthContext] Ignoring auth state change (dummy session active)');
+        return;
+      }
+      
       console.log('[AuthContext] Auth state changed:', _event, session ? 'session exists' : 'no session');
       setSession(session);
       setUser(session?.user ?? null);
@@ -173,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
       subscription2.remove();
     };
-  }, []);
+  }, [isDummySession]);
 
   const loadProfile = async (userId: string) => {
     try {
@@ -232,7 +284,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
-      await loadProfile(user.id);
+      if (isDummySession) {
+        // For dummy sessions, reload from AsyncStorage
+        try {
+          const dummyProfileStr = await AsyncStorage.getItem(DUMMY_PROFILE_KEY);
+          const dummyInterestsStr = await AsyncStorage.getItem(DUMMY_INTERESTS_KEY);
+          
+          if (dummyProfileStr) {
+            setProfile(JSON.parse(dummyProfileStr));
+          }
+          
+          if (dummyInterestsStr) {
+            setInterestsState(JSON.parse(dummyInterestsStr));
+          }
+        } catch (error) {
+          console.error('[AuthContext] Error refreshing dummy profile:', error);
+        }
+      } else {
+        await loadProfile(user.id);
+      }
     }
   };
 
@@ -241,7 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('[AuthContext] Using dummy login for testing in Expo Go');
     
     try {
-      // Create a mock session
+      // Create a mock user
       const mockUser: SupabaseUser = {
         id: `test-user-${email.replace(/[^a-zA-Z0-9]/g, '-')}`,
         email: email,
@@ -251,44 +321,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
 
+      // Save dummy user to AsyncStorage
+      await AsyncStorage.setItem('dummy_user', JSON.stringify(mockUser));
+      
       // Set the mock user
       setUser(mockUser);
+      setIsDummySession(true);
       
-      // Check if profile exists for this test user
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', mockUser.id)
-        .is('deleted_at', null)
-        .maybeSingle();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('[AuthContext] Error checking for existing profile:', profileError);
-      }
-
-      if (existingProfile) {
-        console.log('[AuthContext] Found existing test profile');
-        setProfile(existingProfile);
+      // Try to load existing dummy profile from AsyncStorage (no network call)
+      try {
+        const dummyProfileStr = await AsyncStorage.getItem(DUMMY_PROFILE_KEY);
+        const dummyInterestsStr = await AsyncStorage.getItem(DUMMY_INTERESTS_KEY);
         
-        // Load interests
-        const { data: interestsData } = await supabase
-          .from('user_interests')
-          .select(`
-            *,
-            interests (
-              label
-            )
-          `)
-          .eq('profile_id', existingProfile.id);
-
-        const formattedInterests = (interestsData || []).map((ui: any) => ({
-          ...ui,
-          interest_label: ui.interests?.label || ui.free_text_label,
-        }));
-
-        setInterestsState(formattedInterests);
-      } else {
-        console.log('[AuthContext] No existing test profile, user will need to complete onboarding');
+        if (dummyProfileStr) {
+          const existingProfile = JSON.parse(dummyProfileStr);
+          console.log('[AuthContext] Found existing dummy profile in storage');
+          setProfile(existingProfile);
+          
+          if (dummyInterestsStr) {
+            const existingInterests = JSON.parse(dummyInterestsStr);
+            setInterestsState(existingInterests);
+          }
+        } else {
+          console.log('[AuthContext] No existing dummy profile, user will need to complete onboarding');
+          setProfile(null);
+          setInterestsState([]);
+        }
+      } catch (storageError) {
+        console.error('[AuthContext] Error loading dummy profile from storage:', storageError);
         setProfile(null);
         setInterestsState([]);
       }
@@ -297,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       Alert.alert(
         'Test Login Successful',
-        `You are now logged in with test account: ${email}\n\nThis is a dummy login for testing in Expo Go only.`,
+        `You are now logged in with test account: ${email}\n\nThis is a dummy login for testing in Expo Go only. Your data is stored locally and will not sync with the server.`,
         [{ text: 'OK' }]
       );
 
@@ -413,12 +473,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('[AuthContext] Signing out...');
       
-      // For dummy login, just clear the state
-      if (isExpoGo && user && user.id.startsWith('test-user-')) {
+      // For dummy login, just clear the state and AsyncStorage
+      if (isDummySession) {
         console.log('[AuthContext] Clearing dummy login session');
+        await AsyncStorage.removeItem('dummy_user');
+        await AsyncStorage.removeItem(DUMMY_PROFILE_KEY);
+        await AsyncStorage.removeItem(DUMMY_INTERESTS_KEY);
         setUser(null);
         setProfile(null);
         setInterestsState([]);
+        setIsDummySession(false);
         console.log('[AuthContext] Signed out successfully (dummy)');
         return;
       }
@@ -444,6 +508,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('[AuthContext] Creating profile for user:', user.id);
+
+      // For dummy sessions, store in AsyncStorage
+      if (isDummySession) {
+        const dummyProfile: Profile = {
+          id: `profile-${user.id}`,
+          user_id: user.id,
+          display_name: displayName,
+          photo_url: photoUrl || null,
+          city: null,
+          created_at: new Date().toISOString(),
+          deleted_at: null,
+        };
+        
+        await AsyncStorage.setItem(DUMMY_PROFILE_KEY, JSON.stringify(dummyProfile));
+        setProfile(dummyProfile);
+        console.log('[AuthContext] Dummy profile created and stored locally');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -474,6 +556,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('[AuthContext] Updating profile:', profile.id);
 
+      // For dummy sessions, update AsyncStorage
+      if (isDummySession) {
+        const updatedProfile = { ...profile, ...updates };
+        await AsyncStorage.setItem(DUMMY_PROFILE_KEY, JSON.stringify(updatedProfile));
+        setProfile(updatedProfile);
+        console.log('[AuthContext] Dummy profile updated locally');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
@@ -499,6 +590,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('[AuthContext] Setting interests:', interestLabels);
+
+      // For dummy sessions, store in AsyncStorage
+      if (isDummySession) {
+        const dummyInterests: UserInterest[] = interestLabels.map((label, index) => ({
+          id: `interest-${profile.id}-${index}`,
+          profile_id: profile.id,
+          interest_id: null,
+          interest_label: label,
+          free_text_label: label,
+          created_at: new Date().toISOString(),
+        }));
+        
+        await AsyncStorage.setItem(DUMMY_INTERESTS_KEY, JSON.stringify(dummyInterests));
+        setInterestsState(dummyInterests);
+        console.log('[AuthContext] Dummy interests stored locally');
+        return;
+      }
 
       // Delete existing interests
       const { error: deleteError } = await supabase
@@ -554,7 +662,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasCompletedOnboarding = !!(user && profile && interests.length >= 3);
 
-  console.log('[AuthContext] State - user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null', 'interests:', interests.length, 'onboarded:', hasCompletedOnboarding);
+  console.log('[AuthContext] State - user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null', 'interests:', interests.length, 'onboarded:', hasCompletedOnboarding, 'isDummy:', isDummySession);
 
   return (
     <AuthContext.Provider
