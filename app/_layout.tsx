@@ -11,18 +11,36 @@ import { View } from 'react-native';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { setupErrorLogging } from '@/utils/errorLogger';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch((error) => {
   console.log('Error preventing splash screen auto-hide:', error);
 });
 
-setupErrorLogging(); // abc
+setupErrorLogging();
+
+const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
 
 function RootLayoutNav() {
   const { user, profile, interests, loading, hasCompletedOnboarding } = useAuth();
   const [appReady, setAppReady] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+
+  // Check if user has seen onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const completed = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
+        setHasSeenOnboarding(completed === 'true');
+      } catch (error) {
+        console.error('[App] Error checking onboarding status:', error);
+        setHasSeenOnboarding(false);
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   // Force app to be ready after maximum timeout
   useEffect(() => {
@@ -43,6 +61,7 @@ function RootLayoutNav() {
         console.log('[App] Profile:', profile ? 'exists' : 'null');
         console.log('[App] Interests:', interests.length);
         console.log('[App] Onboarding completed:', hasCompletedOnboarding);
+        console.log('[App] Has seen onboarding:', hasSeenOnboarding);
         
         // Wait for auth to finish loading
         if (!loading) {
@@ -56,7 +75,7 @@ function RootLayoutNav() {
     }
 
     prepare();
-  }, [loading, user, profile, interests, hasCompletedOnboarding]);
+  }, [loading, user, profile, interests, hasCompletedOnboarding, hasSeenOnboarding]);
 
   // Hide splash screen once app is ready
   useEffect(() => {
@@ -84,13 +103,18 @@ function RootLayoutNav() {
   }
 
   console.log('[App] App ready, rendering navigation');
-  console.log('[App] Final routing decision - hasCompletedOnboarding:', hasCompletedOnboarding, 'user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null');
+  console.log('[App] Final routing decision - hasSeenOnboarding:', hasSeenOnboarding, 'hasCompletedOnboarding:', hasCompletedOnboarding, 'user:', user ? 'exists' : 'null', 'profile:', profile ? 'exists' : 'null');
 
   // Determine initial route based on app state
   let initialRoute = null;
   
+  // First time users should see onboarding
+  if (!hasSeenOnboarding) {
+    initialRoute = '/onboarding';
+    console.log('[App] Redirecting to onboarding - first time user');
+  }
   // Check if user is not logged in
-  if (!user) {
+  else if (!user) {
     initialRoute = '/auth/signup';
     console.log('[App] Redirecting to signup - user not logged in');
   }

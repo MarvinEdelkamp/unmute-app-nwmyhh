@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -41,6 +41,18 @@ export default function SignInScreen() {
     }
   };
 
+  const handleSkipLogin = async () => {
+    try {
+      setLoading(true);
+      // Use a test email for dummy login
+      await signIn('test@test.com');
+    } catch (error) {
+      console.log('Skip login error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -48,6 +60,12 @@ export default function SignInScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.header}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.highlight }, shadows.md]}>
+            <Text style={[styles.bracketsLogo, { color: colors.primary }]}>[ ]</Text>
+          </View>
+        </View>
+
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Sign in to continue</Text>
 
@@ -115,6 +133,24 @@ export default function SignInScreen() {
           </Text>
         </TouchableOpacity>
 
+        {isExpoGo && (
+          <TouchableOpacity 
+            style={[styles.skipButton, loading && styles.buttonDisabled]}
+            onPress={handleSkipLogin}
+            disabled={loading}
+          >
+            <IconSymbol 
+              ios_icon_name="flask.fill" 
+              android_material_icon_name="science" 
+              size={18} 
+              color={colors.accent} 
+            />
+            <Text style={styles.skipButtonText}>
+              Skip Login (Testing)
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity 
           style={styles.linkButton}
           onPress={() => router.back()}
@@ -137,7 +173,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingBottom: 180,
+    paddingBottom: 240,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bracketsLogo: {
+    fontSize: 44,
+    fontWeight: '300',
+    letterSpacing: -2,
   },
   title: {
     fontSize: 32,
@@ -257,6 +309,24 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  skipButton: {
+    width: '100%',
+    paddingVertical: spacing.md + spacing.xs,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.accent + '15',
+    borderWidth: 1.5,
+    borderColor: colors.accent + '40',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  skipButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
+    letterSpacing: 0.2,
   },
   linkButton: {
     alignItems: 'center',

@@ -1,122 +1,128 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
-import { PaginationDots } from '@/components/PaginationDots';
+import { useTheme } from '@/contexts/ThemeContext';
+import { hapticFeedback } from '@/utils/haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const isExpoGo = Constants.appOwnership === 'expo';
+const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
 
 export default function WelcomeScreen() {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(50)).current;
+  const { theme } = useTheme();
 
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 90,
-      }),
-    ]).start();
-  }, []);
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+      hapticFeedback.light();
+      router.replace('/onboarding');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      router.replace('/onboarding');
+    }
+  };
+
+  const handleSkipLogin = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+      hapticFeedback.light();
+      
+      // Use dummy login with a test email
+      const { useAuth } = await import('@/contexts/AuthContext');
+      // We'll navigate to signup which will handle the dummy login
+      router.replace('/auth/signup');
+    } catch (error) {
+      console.error('Error skipping login:', error);
+      router.replace('/auth/signup');
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.animatedContent,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
-        ]}
-      >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
-              <IconSymbol 
-                ios_icon_name="person.2.fill" 
-                android_material_icon_name="people" 
-                size={56} 
-                color={colors.primary} 
-              />
-              <View style={styles.locationBadge}>
-                <IconSymbol 
-                  ios_icon_name="mappin.circle.fill" 
-                  android_material_icon_name="location_on" 
-                  size={28} 
-                  color={colors.card} 
-                />
-              </View>
-            </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <View style={[styles.iconCircle, { backgroundColor: theme.highlight }, shadows.lg]}>
+            <Text style={[styles.bracketsLogo, { color: theme.primary }]}>[ ]</Text>
           </View>
+        </View>
 
-          <Text style={styles.title}>Unmute</Text>
-          <Text style={styles.tagline}>Say hi for real</Text>
-          
-          <Text style={styles.description}>
-            Meet people nearby who share your interests. Right here, right now, in real life.
-          </Text>
-
-          <View style={styles.featureContainer}>
-            <View style={styles.feature}>
-              <View style={styles.checkmark}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={18} 
-                  color={colors.card} 
-                />
-              </View>
-              <Text style={styles.featureText}>No feeds, no scrolling, no social graph</Text>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={styles.checkmark}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={18} 
-                  color={colors.card} 
-                />
-              </View>
-              <Text style={styles.featureText}>Only when you&apos;re open to connect</Text>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={styles.checkmark}>
-                <IconSymbol 
-                  ios_icon_name="checkmark" 
-                  android_material_icon_name="check" 
-                  size={18} 
-                  color={colors.card} 
-                />
-              </View>
-              <Text style={styles.featureText}>Your privacy is protected</Text>
-            </View>
-          </View>
-        </ScrollView>
-      </Animated.View>
-
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => router.push('/onboarding/how-it-works')}
-        >
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.primaryDark }]}>Welcome to Unmute</Text>
+        <Text style={[styles.tagline, { color: theme.primary }]}>Say hi for real</Text>
         
-        <PaginationDots total={3} current={0} />
+        <Text style={[styles.description, { color: theme.text }]}>
+          Meet people nearby who share your interests. Right here, right now, in real life.
+        </Text>
+
+        <View style={styles.featureContainer}>
+          <View style={styles.feature}>
+            <View style={[styles.checkmark, { backgroundColor: theme.primary }, shadows.sm]}>
+              <IconSymbol 
+                ios_icon_name="checkmark" 
+                android_material_icon_name="check" 
+                size={16} 
+                color={theme.surface} 
+              />
+            </View>
+            <Text style={[styles.featureText, { color: theme.text }]}>No feeds, no scrolling</Text>
+          </View>
+
+          <View style={styles.feature}>
+            <View style={[styles.checkmark, { backgroundColor: theme.primary }, shadows.sm]}>
+              <IconSymbol 
+                ios_icon_name="checkmark" 
+                android_material_icon_name="check" 
+                size={16} 
+                color={theme.surface} 
+              />
+            </View>
+            <Text style={[styles.featureText, { color: theme.text }]}>Real connections only</Text>
+          </View>
+
+          <View style={styles.feature}>
+            <View style={[styles.checkmark, { backgroundColor: theme.primary }, shadows.sm]}>
+              <IconSymbol 
+                ios_icon_name="checkmark" 
+                android_material_icon_name="check" 
+                size={16} 
+                color={theme.surface} 
+              />
+            </View>
+            <Text style={[styles.featureText, { color: theme.text }]}>Your privacy protected</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={[styles.bottomContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
+        <TouchableOpacity 
+          style={[styles.button, { backgroundColor: theme.primary }, shadows.md]}
+          onPress={handleGetStarted}
+        >
+          <Text style={[styles.buttonText, { color: theme.surface }]}>
+            Get Started
+          </Text>
+        </TouchableOpacity>
+
+        {isExpoGo && (
+          <TouchableOpacity 
+            style={[styles.skipButton, { backgroundColor: theme.secondary, borderColor: theme.border }]}
+            onPress={handleSkipLogin}
+          >
+            <IconSymbol 
+              ios_icon_name="flask.fill" 
+              android_material_icon_name="science" 
+              size={18} 
+              color={theme.accent} 
+            />
+            <Text style={[styles.skipButtonText, { color: theme.accent }]}>
+              Skip Login (Testing)
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -125,142 +131,104 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  animatedContent: {
+  content: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingTop: Platform.OS === 'android' ? 80 : 100,
+    paddingTop: Platform.OS === 'android' ? 100 : 120,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingBottom: 180,
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl + spacing.lg,
+    marginBottom: spacing.huge,
   },
   iconCircle: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
   },
-  locationBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: colors.card,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  bracketsLogo: {
+    fontSize: 72,
+    fontWeight: '300',
+    letterSpacing: -4,
   },
   title: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.text,
+    ...typography.h1,
+    fontSize: 36,
     textAlign: 'center',
     marginBottom: spacing.sm,
-    letterSpacing: -1,
   },
   tagline: {
+    ...typography.h2,
     fontSize: 22,
-    fontWeight: '600',
-    color: colors.primary,
     textAlign: 'center',
     marginBottom: spacing.xxxl,
-    letterSpacing: -0.3,
   },
   description: {
+    ...typography.body,
     fontSize: 17,
-    fontWeight: '400',
-    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.xxxl + spacing.lg,
     lineHeight: 26,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   featureContainer: {
     width: '100%',
-    gap: spacing.lg + spacing.xs,
+    gap: spacing.lg,
   },
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   checkmark: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   featureText: {
+    ...typography.body,
     fontSize: 16,
-    fontWeight: '400',
-    color: colors.text,
     flex: 1,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl + spacing.md,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    gap: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.md,
+    borderTopWidth: 1,
   },
   button: {
     width: '100%',
     minHeight: 56,
-    paddingVertical: spacing.lg + spacing.xs,
+    paddingVertical: spacing.lg,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.card,
-    letterSpacing: 0.2,
+    ...typography.bodyBold,
+    fontSize: 18,
+    letterSpacing: 0.3,
+  },
+  skipButton: {
+    width: '100%',
+    minHeight: 48,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+  },
+  skipButtonText: {
+    ...typography.bodyBold,
+    fontSize: 15,
   },
 });
