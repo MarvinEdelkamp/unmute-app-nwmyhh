@@ -1,5 +1,6 @@
 
 // Unmute Premium Design System - Color Tokens
+// ALL LIGHT COLORS - NO BLACK DESIGN
 
 // Primary brand colors
 export const unmuteColors = {
@@ -10,13 +11,13 @@ export const unmuteColors = {
   // Secondary accent (for testing/special features)
   accent: '#F59E0B',
   
-  // Backgrounds
+  // Backgrounds - all light
   bgDefault: '#F6F7FA',
   surface: '#FFFFFF',
   
-  // Text colors
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
+  // Text colors - using dark grays instead of black
+  textPrimary: '#374151', // Warm dark gray
+  textSecondary: '#6B7280', // Medium gray
   
   // Borders
   borderSubtle: '#E5E7EB',
@@ -29,7 +30,7 @@ export const unmuteColors = {
 
 // Legacy exports for backwards compatibility
 const tintColorLight = unmuteColors.primary;
-const tintColorDark = "#fff";
+const tintColorDark = unmuteColors.primary; // Changed from white to primary
 
 export const zincColors = {
   50: "#fafafa",
@@ -60,11 +61,11 @@ export const Colors = {
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: "#ECEDEE",
-    background: "#151718",
+    text: unmuteColors.textPrimary, // Using same light colors
+    background: unmuteColors.bgDefault,
     tint: tintColorDark,
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
+    icon: unmuteColors.textSecondary,
+    tabIconDefault: unmuteColors.textSecondary,
     tabIconSelected: tintColorDark,
   },
 };

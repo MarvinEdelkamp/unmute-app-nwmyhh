@@ -4,20 +4,21 @@ import { unmuteColors } from '@/constants/Colors';
 
 // Premium Unmute Design System
 // Calm, safe, minimal, European, slightly Apple-like
+// ALL LIGHT COLORS - NO BLACK DESIGN
 
 // Light theme colors (primary theme)
 export const lightColors = {
-  // Backgrounds
+  // Backgrounds - all light
   background: unmuteColors.bgDefault,
   backgroundSecondary: '#FAFBFC',
   surface: unmuteColors.surface,
   
-  // Text
-  text: unmuteColors.textPrimary,
-  textSecondary: unmuteColors.textSecondary,
-  textTertiary: '#9CA3AF',
+  // Text - using dark grays instead of black
+  text: '#374151', // Warm dark gray instead of black
+  textSecondary: '#6B7280', // Medium gray
+  textTertiary: '#9CA3AF', // Light gray
   
-  // Brand colors
+  // Brand colors - keeping the teal
   primary: unmuteColors.primary,
   primaryLight: '#7DBFB3',
   primaryDark: unmuteColors.primaryDark,
@@ -46,35 +47,35 @@ export const lightColors = {
 
 // Dark theme colors (for future dark mode support)
 export const darkColors = {
-  background: '#0F1419',
-  backgroundSecondary: '#1A1F26',
-  surface: '#1A1F26',
+  background: '#F6F7FA', // Light background
+  backgroundSecondary: '#FAFBFC',
+  surface: '#FFFFFF',
   
-  text: '#F9FAFB',
-  textSecondary: '#9CA3AF',
-  textTertiary: '#6B7280',
+  text: '#374151',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
   
-  primary: '#5AAFA0',
+  primary: '#4A9B8E',
   primaryLight: '#7DBFB3',
-  primaryDark: '#3A7A6E',
+  primaryDark: '#244354',
   
-  secondary: '#1F2D2A',
-  accent: '#FFA94D',
-  highlight: '#243330',
+  secondary: '#EDF5F3',
+  accent: '#F59E0B',
+  highlight: '#E8F3F1',
   
-  error: '#FF6B6B',
-  errorLight: '#3D2626',
-  success: '#51CF66',
-  successLight: '#2D3D2F',
-  warning: '#FFA94D',
-  warningLight: '#3D3426',
+  error: '#E53935',
+  errorLight: '#FADBD8',
+  success: '#10B981',
+  successLight: '#D1FAE5',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
   
-  card: '#1A1F26',
-  border: '#2C3440',
-  borderLight: '#252A33',
-  disabled: '#2C3440',
-  shadow: 'rgba(0, 0, 0, 0.3)',
-  overlay: 'rgba(0, 0, 0, 0.7)',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+  disabled: '#F3F4F6',
+  shadow: 'rgba(0, 0, 0, 0.06)',
+  overlay: 'rgba(0, 0, 0, 0.4)',
 };
 
 // Default to light colors

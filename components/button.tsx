@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   ActivityIndicator,
@@ -8,7 +9,7 @@ import {
   useColorScheme,
   ViewStyle,
 } from "react-native";
-import { appleBlue, zincColors } from "@/constants/Colors";
+import { appleBlue } from "@/constants/Colors";
 
 type ButtonVariant = "filled" | "outline" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
@@ -35,7 +36,6 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
 }) => {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
 
   const sizeStyles: Record<
     ButtonSize,
@@ -58,14 +58,14 @@ export const Button: React.FC<ButtonProps> = ({
       case "filled":
         return {
           ...baseStyle,
-          backgroundColor: isDark ? zincColors[50] : zincColors[900],
+          backgroundColor: '#4A9B8E', // Unmute teal
         };
       case "outline":
         return {
           ...baseStyle,
           backgroundColor: "transparent",
           borderWidth: 1,
-          borderColor: isDark ? zincColors[700] : zincColors[300],
+          borderColor: '#E5E7EB', // Light gray border
         };
       case "ghost":
         return {
@@ -77,12 +77,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getTextColor = () => {
     if (disabled) {
-      return isDark ? zincColors[500] : zincColors[400];
+      return '#9CA3AF'; // Light gray for disabled
     }
 
     switch (variant) {
       case "filled":
-        return isDark ? zincColors[900] : zincColors[50];
+        return '#FFFFFF'; // White text on teal background
       case "outline":
       case "ghost":
         return appleBlue;
