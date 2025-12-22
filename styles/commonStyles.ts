@@ -2,86 +2,59 @@
 import { StyleSheet } from 'react-native';
 import { unmuteColors } from '@/constants/Colors';
 
-// Premium Unmute Design System
-// Calm, safe, minimal, European, slightly Apple-like
-// ALL LIGHT COLORS - NO BLACK DESIGN
+// Unmute Premium Design System
+// Trust-first, calm, privacy-by-default, warm minimalism
+// Apple-level craft
 
-// Light theme colors (primary theme)
-export const lightColors = {
-  // Backgrounds - all light
-  background: unmuteColors.bgDefault,
-  backgroundSecondary: '#FAFBFC',
-  surface: unmuteColors.surface,
-  
-  // Text - using dark grays instead of black
-  text: '#374151', // Warm dark gray instead of black
-  textSecondary: '#6B7280', // Medium gray
-  textTertiary: '#9CA3AF', // Light gray
-  
-  // Brand colors - keeping the teal
+// Color palette - warm, calm, readable
+export const colors = {
+  // Primary brand
   primary: unmuteColors.primary,
-  primaryLight: '#7DBFB3',
   primaryDark: unmuteColors.primaryDark,
+  primaryLight: unmuteColors.primaryLight,
   
-  // Accents
-  secondary: '#EDF5F3',
-  accent: unmuteColors.accent,
-  highlight: '#E8F3F1',
+  // Backgrounds
+  background: unmuteColors.background,
+  surface: unmuteColors.surface,
+  surface2: unmuteColors.surface2,
   
-  // Status
-  error: unmuteColors.error,
-  errorLight: '#FADBD8',
-  success: unmuteColors.success,
-  successLight: '#D1FAE5',
-  warning: unmuteColors.warning,
-  warningLight: '#FEF3C7',
+  // Text hierarchy
+  text: unmuteColors.textPrimary,
+  textSecondary: unmuteColors.textSecondary,
+  textTertiary: unmuteColors.textTertiary,
+  textPlaceholder: unmuteColors.textPlaceholder,
   
   // UI elements
+  border: unmuteColors.border,
+  infoBg: unmuteColors.infoBg,
+  
+  // Status
+  danger: unmuteColors.danger,
+  dangerBg: unmuteColors.dangerBg,
+  success: unmuteColors.success,
+  successBg: unmuteColors.successBg,
+  warning: unmuteColors.warning,
+  warningBg: unmuteColors.warningBg,
+  
+  // Accent
+  accent: unmuteColors.accent,
+  
+  // Semantic aliases
   card: unmuteColors.surface,
-  border: unmuteColors.borderSubtle,
-  borderLight: '#F3F4F6',
-  disabled: '#F3F4F6',
-  shadow: 'rgba(0, 0, 0, 0.06)',
-  overlay: 'rgba(0, 0, 0, 0.4)',
+  highlight: unmuteColors.infoBg,
+  secondary: unmuteColors.infoBg,
+  disabled: unmuteColors.surface2,
+  error: unmuteColors.danger,
+  errorLight: unmuteColors.dangerBg,
+  successLight: unmuteColors.successBg,
+  warningLight: unmuteColors.warningBg,
+  backgroundSecondary: unmuteColors.surface,
+  borderLight: unmuteColors.surface2,
+  shadow: 'rgba(45, 42, 39, 0.08)',
+  overlay: 'rgba(45, 42, 39, 0.4)',
 };
 
-// Dark theme colors (for future dark mode support)
-export const darkColors = {
-  background: '#F6F7FA', // Light background
-  backgroundSecondary: '#FAFBFC',
-  surface: '#FFFFFF',
-  
-  text: '#374151',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  
-  primary: '#4A9B8E',
-  primaryLight: '#7DBFB3',
-  primaryDark: '#244354',
-  
-  secondary: '#EDF5F3',
-  accent: '#F59E0B',
-  highlight: '#E8F3F1',
-  
-  error: '#E53935',
-  errorLight: '#FADBD8',
-  success: '#10B981',
-  successLight: '#D1FAE5',
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
-  
-  card: '#FFFFFF',
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
-  disabled: '#F3F4F6',
-  shadow: 'rgba(0, 0, 0, 0.06)',
-  overlay: 'rgba(0, 0, 0, 0.4)',
-};
-
-// Default to light colors
-export const colors = lightColors;
-
-// Spacing scale - consistent and breathable
+// Spacing scale - consistent, breathable
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -103,52 +76,55 @@ export const layout = {
   bottomButtonHeight: 100,
 };
 
-// Typography scale - modern, clean, readable
-// Using system fonts (SF Pro on iOS, Roboto on Android)
+// Typography scale - Inter-like system font
+// H1: 34/40 Semibold
+// H2: 24/30 Semibold
+// Body: 16/26 Regular
+// Caption: 13/18 Regular
 export const typography = {
-  // H1 - Main titles (28-32pt, semibold, primaryDark)
+  // H1 - Main titles
   h1: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '600' as const,
-    lineHeight: 38,
+    lineHeight: 40,
     letterSpacing: -0.5,
   },
   
-  // H2 - Section titles (20-22pt, semibold)
+  // H2 - Section titles
   h2: {
-    fontSize: 21,
+    fontSize: 24,
     fontWeight: '600' as const,
-    lineHeight: 28,
+    lineHeight: 30,
     letterSpacing: -0.3,
   },
   
-  // Body - Regular text (15-17pt, regular, textPrimary)
+  // Body - Regular text
   body: {
     fontSize: 16,
     fontWeight: '400' as const,
-    lineHeight: 24,
+    lineHeight: 26,
     letterSpacing: 0,
   },
   
   bodyBold: {
     fontSize: 16,
     fontWeight: '600' as const,
-    lineHeight: 24,
+    lineHeight: 26,
     letterSpacing: 0,
   },
   
-  // Helper/meta text (13-14pt, textSecondary)
+  // Caption - Helper/meta text
   caption: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400' as const,
-    lineHeight: 20,
+    lineHeight: 18,
     letterSpacing: 0,
   },
   
   captionBold: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    lineHeight: 20,
+    lineHeight: 18,
     letterSpacing: 0,
   },
   
@@ -196,21 +172,60 @@ export const typography = {
   },
 };
 
-// Button styles - clean and minimal
+// Border radius scale
+export const borderRadius = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  round: 9999,
+};
+
+// Shadow presets - soft, subtle
+export const shadows = {
+  sm: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lg: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  xl: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+};
+
+// Button styles - Primary (gradient), Secondary (flat), Tertiary (text), Danger
 export const buttonStyles = StyleSheet.create({
   primary: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xxl,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    minHeight: 56,
+    ...shadows.md,
   },
   
   primaryActive: {
@@ -226,16 +241,16 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xxl,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 56,
     borderWidth: 1.5,
     borderColor: colors.border,
   },
   
   secondaryPressed: {
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.surface2,
     borderColor: colors.primary,
   },
   
@@ -243,13 +258,24 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xxl,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   
   ghostPressed: {
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.surface2,
+  },
+  
+  danger: {
+    backgroundColor: colors.danger,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: borderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    ...shadows.md,
   },
   
   text: {
@@ -267,10 +293,15 @@ export const buttonStyles = StyleSheet.create({
     color: colors.primary,
   },
   
+  textDanger: {
+    ...typography.bodyBold,
+    color: colors.surface,
+  },
+  
   link: {
     ...typography.caption,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.textSecondary,
     textDecorationLine: 'underline',
   },
   
@@ -333,45 +364,38 @@ export const commonStyles = StyleSheet.create({
   
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
     marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
   
   cardElevated: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
     marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
   },
   
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
     ...typography.body,
     color: colors.text,
   },
   
   inputFocused: {
     borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    ...shadows.sm,
   },
   
   centerContent: {
@@ -418,47 +442,22 @@ export const animations = {
   timingSlow: {
     duration: 500,
   },
+  // Breathing animation for Open ring
+  breathing: {
+    duration: 4500,
+    scale: {
+      from: 1,
+      to: 1.03,
+    },
+    opacity: {
+      from: 0.18,
+      to: 0.28,
+    },
+  },
 };
 
-// Border radius scale
-export const borderRadius = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  round: 9999,
-};
+// Light theme colors (for ThemeContext)
+export const lightColors = colors;
 
-// Shadow presets - soft and subtle
-export const shadows = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  xl: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-};
+// Dark theme colors (same as light for now - no dark mode)
+export const darkColors = colors;

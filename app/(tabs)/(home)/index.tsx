@@ -8,15 +8,17 @@ import { useSession } from '@/contexts/SessionContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { ProgressRing } from '@/components/ProgressRing';
-import { spacing, typography, borderRadius, shadows } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, shadows, animations } from '@/styles/commonStyles';
 import { hapticFeedback } from '@/utils/haptics';
 
 export default function HomeScreen() {
   const { profile, interests } = useAuth();
   const { isOpen, remainingTime, openSession, closeSession, extendSession, matches } = useSession();
   const { theme } = useTheme();
+  
+  // Breathing animation for Open state
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
-  const glowAnim = React.useRef(new Animated.Value(0)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0.18)).current;
   const mountedRef = React.useRef(true);
 
   useEffect(() => {
@@ -29,52 +31,54 @@ export default function HomeScreen() {
     };
   }, []);
 
+  // Premium breathing animation - calm, not glowy
   useEffect(() => {
     if (isOpen) {
-      Animated.loop(
+      const breathingAnimation = Animated.loop(
         Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.01,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
+          Animated.parallel([
+            Animated.timing(scaleAnim, {
+              toValue: 1.03,
+              duration: animations.breathing.duration / 2,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+              toValue: 0.28,
+              duration: animations.breathing.duration / 2,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(scaleAnim, {
+              toValue: 1,
+              duration: animations.breathing.duration / 2,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+              toValue: 0.18,
+              duration: animations.breathing.duration / 2,
+              useNativeDriver: true,
+            }),
+          ]),
         ])
-      ).start();
-
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+      );
+      breathingAnimation.start();
+      
+      return () => breathingAnimation.stop();
     } else {
       scaleAnim.setValue(1);
-      glowAnim.setValue(0);
+      opacityAnim.setValue(0.18);
     }
   }, [isOpen]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins} min`;
   };
 
   const formatEndTime = (seconds: number) => {
     const endTime = new Date(Date.now() + seconds * 1000);
-    return endTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
   const handleToggle = async () => {
@@ -202,16 +206,8 @@ export default function HomeScreen() {
                   styles.glowOuter,
                   {
                     backgroundColor: theme.primary,
-                    opacity: glowAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.08, 0.15],
-                    }),
-                    transform: [{
-                      scale: glowAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.06],
-                      }),
-                    }],
+                    opacity: opacityAnim,
+                    transform: [{ scale: scaleAnim }],
                   },
                 ]}
               />
@@ -221,7 +217,7 @@ export default function HomeScreen() {
               <View style={styles.progressRingContainer}>
                 <ProgressRing
                   size={240}
-                  strokeWidth={5}
+                  strokeWidth={4}
                   progress={progress}
                   color={theme.primary}
                   backgroundColor={theme.border}
@@ -229,12 +225,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            <Animated.View 
-              style={[
-                styles.circle,
-                { transform: [{ scale: scaleAnim }] }
-              ]}
-            >
+            <View style={styles.circle}>
               <TouchableOpacity
                 style={styles.circleButton}
                 onPress={handleToggle}
@@ -242,7 +233,7 @@ export default function HomeScreen() {
               >
                 {isOpen ? (
                   <LinearGradient
-                    colors={[theme.primary, theme.primaryDark]}
+                    colors={['#4A7D73', theme.primary]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[styles.circleGradient, shadows.lg]}
@@ -258,7 +249,7 @@ export default function HomeScreen() {
                     )}
                   </LinearGradient>
                 ) : (
-                  <View style={[styles.circleGradient, { backgroundColor: theme.disabled }]}>
+                  <View style={[styles.circleGradient, { backgroundColor: theme.surface2 }]}>
                     <View style={styles.bracketsContainer}>
                       <Text style={[styles.bracket, { color: theme.textSecondary }]}>[ ]</Text>
                     </View>
@@ -266,7 +257,7 @@ export default function HomeScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           </View>
 
           {!isOpen && (
@@ -277,7 +268,7 @@ export default function HomeScreen() {
 
           {isOpen && remainingTime > 0 && (
             <View style={styles.sessionInfo}>
-              <View style={[styles.timerBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.timerBadge, { backgroundColor: theme.surface, borderColor: theme.border }, shadows.sm]}>
                 <IconSymbol 
                   ios_icon_name="clock.fill" 
                   android_material_icon_name="schedule" 
@@ -372,7 +363,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.huge,
-    lineHeight: 24,
   },
   circleContainer: {
     alignItems: 'center',
@@ -419,8 +409,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   timerText: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '600',
     letterSpacing: -1,
     marginTop: spacing.xs,
   },
@@ -439,14 +429,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
   },
   sessionTimer: {
     ...typography.body,
@@ -488,7 +473,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.round,
     borderWidth: 1,
   },
   interestEmoji: {

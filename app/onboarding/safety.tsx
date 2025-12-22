@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 import { PaginationDots } from '@/components/PaginationDots';
@@ -36,8 +36,8 @@ export default function SafetyScreen() {
         <IconSymbol 
           ios_icon_name="chevron.left" 
           android_material_icon_name="arrow_back" 
-          size={24} 
-          color={colors.card} 
+          size={20} 
+          color={colors.surface} 
         />
       </TouchableOpacity>
 
@@ -55,7 +55,7 @@ export default function SafetyScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.infoBg }, shadows.lg]}>
               <IconSymbol 
                 ios_icon_name="shield.fill" 
                 android_material_icon_name="shield" 
@@ -70,7 +70,7 @@ export default function SafetyScreen() {
 
           <View style={styles.safetyContainer}>
             <View style={styles.safetyItem}>
-              <View style={styles.iconCircleSmall}>
+              <View style={[styles.iconCircleSmall, { backgroundColor: colors.infoBg }, shadows.sm]}>
                 <IconSymbol 
                   ios_icon_name="eye.fill" 
                   android_material_icon_name="visibility" 
@@ -87,7 +87,7 @@ export default function SafetyScreen() {
             </View>
 
             <View style={styles.safetyItem}>
-              <View style={styles.iconCircleSmall}>
+              <View style={[styles.iconCircleSmall, { backgroundColor: colors.infoBg }, shadows.sm]}>
                 <IconSymbol 
                   ios_icon_name="clock.fill" 
                   android_material_icon_name="schedule" 
@@ -96,15 +96,15 @@ export default function SafetyScreen() {
                 />
               </View>
               <View style={styles.safetyContent}>
-                <Text style={styles.safetyTitle}>Matches expire</Text>
+                <Text style={styles.safetyTitle}>Sessions expire</Text>
                 <Text style={styles.safetyDescription}>
-                  No pressure. If you don&apos;t respond, it disappears
+                  No pressure. If you don't respond, it disappears
                 </Text>
               </View>
             </View>
 
             <View style={styles.safetyItem}>
-              <View style={styles.iconCircleSmall}>
+              <View style={[styles.iconCircleSmall, { backgroundColor: colors.infoBg }, shadows.sm]}>
                 <IconSymbol 
                   ios_icon_name="shield.fill" 
                   android_material_icon_name="shield" 
@@ -123,15 +123,15 @@ export default function SafetyScreen() {
         </ScrollView>
       </Animated.View>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }, shadows.md]}
           onPress={() => router.push('/onboarding/location')}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
+          <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
         
-        <PaginationDots total={3} current={2} />
+        <PaginationDots total={3} current={1} />
       </View>
     </View>
   );
@@ -153,11 +153,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadows.md,
   },
   animatedContent: {
     flex: 1,
@@ -176,34 +172,26 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
   },
   title: {
+    ...typography.h1,
     fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
+    color: colors.primaryDark,
     textAlign: 'center',
     marginBottom: spacing.md,
-    letterSpacing: -0.5,
     paddingHorizontal: spacing.lg,
   },
   subtitle: {
-    fontSize: 17,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl + spacing.lg,
+    marginBottom: spacing.huge,
   },
   safetyContainer: {
     width: '100%',
-    gap: spacing.xxl + spacing.xs,
+    gap: spacing.xxl,
   },
   safetyItem: {
     flexDirection: 'row',
@@ -214,31 +202,22 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   safetyContent: {
     flex: 1,
     paddingTop: spacing.xs,
   },
   safetyTitle: {
+    ...typography.h2,
     fontSize: 18,
-    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.sm,
-    letterSpacing: -0.2,
   },
   safetyDescription: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
-    lineHeight: 24,
   },
   bottomContainer: {
     position: 'absolute',
@@ -247,34 +226,24 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl + spacing.md,
-    backgroundColor: colors.background,
+    paddingBottom: spacing.xxxl,
     alignItems: 'center',
     gap: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
+    borderTopWidth: 1,
+    ...shadows.lg,
   },
   button: {
     width: '100%',
     minHeight: 56,
-    paddingVertical: spacing.lg + spacing.xs,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
+    ...typography.bodyBold,
     fontSize: 17,
-    fontWeight: '600',
-    color: colors.card,
-    letterSpacing: 0.2,
+    color: colors.surface,
+    letterSpacing: 0.3,
   },
 });

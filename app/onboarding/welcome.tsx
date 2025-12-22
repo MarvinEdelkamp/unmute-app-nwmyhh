@@ -31,10 +31,6 @@ export default function WelcomeScreen() {
     try {
       await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
       hapticFeedback.light();
-      
-      // Use dummy login with a test email
-      const { useAuth } = await import('@/contexts/AuthContext');
-      // We'll navigate to signup which will handle the dummy login
       router.replace('/auth/signup');
     } catch (error) {
       console.error('Error skipping login:', error);
@@ -46,7 +42,7 @@ export default function WelcomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.highlight }, shadows.lg]}>
+          <View style={[styles.iconCircle, { backgroundColor: theme.infoBg }, shadows.lg]}>
             <Text style={[styles.bracketsLogo, { color: theme.primary }]}>[ ]</Text>
           </View>
         </View>
@@ -109,16 +105,16 @@ export default function WelcomeScreen() {
 
         {isExpoGo && (
           <TouchableOpacity 
-            style={[styles.skipButton, { backgroundColor: theme.secondary, borderColor: theme.border }]}
+            style={[styles.skipButton, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}
             onPress={handleSkipLogin}
           >
             <IconSymbol 
               ios_icon_name="flask.fill" 
               android_material_icon_name="science" 
               size={18} 
-              color={theme.accent} 
+              color={theme.warning} 
             />
-            <Text style={[styles.skipButtonText, { color: theme.accent }]}>
+            <Text style={[styles.skipButtonText, { color: theme.warning }]}>
               Skip Login (Testing)
             </Text>
           </TouchableOpacity>
@@ -156,22 +152,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h1,
-    fontSize: 36,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   tagline: {
     ...typography.h2,
-    fontSize: 22,
     textAlign: 'center',
     marginBottom: spacing.xxxl,
   },
   description: {
     ...typography.body,
-    fontSize: 17,
     textAlign: 'center',
-    marginBottom: spacing.xxxl + spacing.lg,
-    lineHeight: 26,
+    marginBottom: spacing.huge,
     paddingHorizontal: spacing.md,
   },
   featureContainer: {
@@ -184,21 +176,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   checkmark: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   featureText: {
     ...typography.body,
-    fontSize: 16,
     flex: 1,
-    lineHeight: 22,
   },
   bottomContainer: {
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
     gap: spacing.md,
     borderTopWidth: 1,
@@ -207,20 +197,20 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 56,
     paddingVertical: spacing.lg,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
     ...typography.bodyBold,
-    fontSize: 18,
+    fontSize: 17,
     letterSpacing: 0.3,
   },
   skipButton: {
     width: '100%',
     minHeight: 48,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',

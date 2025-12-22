@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Location from 'expo-location';
 import { useAuth } from '@/contexts/AuthContext';
+import { PaginationDots } from '@/components/PaginationDots';
 
 export default function LocationScreen() {
   const { completeOnboarding } = useAuth();
@@ -47,11 +48,9 @@ export default function LocationScreen() {
         setPermissionStatus('granted');
         console.log('[Location] Permission granted, completing onboarding');
         
-        // Mark onboarding as complete
         await completeOnboarding();
         
         if (mountedRef.current) {
-          // Navigate to signup
           router.replace('/auth/signup');
         }
       } else {
@@ -100,7 +99,6 @@ export default function LocationScreen() {
     
     try {
       console.log('[Location] User skipped location permission');
-      // Mark onboarding as complete before navigating
       await completeOnboarding();
       
       if (mountedRef.current) {
@@ -118,14 +116,14 @@ export default function LocationScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.infoBg }, shadows.lg]}>
             <IconSymbol 
               ios_icon_name="mappin.circle.fill" 
               android_material_icon_name="location_on" 
               size={64} 
               color={colors.primary} 
             />
-            <View style={styles.lockBadge}>
+            <View style={[styles.lockBadge, { backgroundColor: colors.surface, borderColor: colors.infoBg }, shadows.sm]}>
               <IconSymbol 
                 ios_icon_name="lock.fill" 
                 android_material_icon_name="lock" 
@@ -144,24 +142,24 @@ export default function LocationScreen() {
 
         <View style={styles.featureContainer}>
           <View style={styles.feature}>
-            <View style={styles.checkmark}>
+            <View style={[styles.checkmark, { backgroundColor: colors.primary }, shadows.sm]}>
               <IconSymbol 
                 ios_icon_name="checkmark" 
                 android_material_icon_name="check" 
                 size={18} 
-                color={colors.card} 
+                color={colors.surface} 
               />
             </View>
-            <Text style={styles.featureText}>Only while you&apos;re Open to connect</Text>
+            <Text style={styles.featureText}>Only while you're Open to connect</Text>
           </View>
 
           <View style={styles.feature}>
-            <View style={styles.checkmark}>
+            <View style={[styles.checkmark, { backgroundColor: colors.primary }, shadows.sm]}>
               <IconSymbol 
                 ios_icon_name="checkmark" 
                 android_material_icon_name="check" 
                 size={18} 
-                color={colors.card} 
+                color={colors.surface} 
               />
             </View>
             <Text style={styles.featureText}>We never show your exact location to others</Text>
@@ -169,10 +167,12 @@ export default function LocationScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
           style={[
             styles.button,
+            { backgroundColor: colors.primary },
+            shadows.md,
             (loading || permissionStatus === 'requesting') && { opacity: 0.6 }
           ]}
           onPress={handleEnableLocation}
@@ -190,6 +190,8 @@ export default function LocationScreen() {
         >
           <Text style={styles.skipText}>Not now</Text>
         </TouchableOpacity>
+        
+        <PaginationDots total={3} current={2} />
       </View>
     </View>
   );
@@ -203,26 +205,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingBottom: 200,
+    paddingBottom: 240,
     alignItems: 'center',
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl + spacing.lg,
+    marginBottom: spacing.huge,
   },
   iconCircle: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: colors.highlight,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
   },
   lockBadge: {
     position: 'absolute',
@@ -231,39 +227,28 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: colors.highlight,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   title: {
+    ...typography.h1,
     fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
+    color: colors.primaryDark,
     textAlign: 'center',
-    marginBottom: spacing.lg + spacing.xs,
-    letterSpacing: -0.5,
+    marginBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    lineHeight: 36,
   },
   description: {
-    fontSize: 17,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl + spacing.lg,
-    lineHeight: 26,
+    marginBottom: spacing.huge,
     paddingHorizontal: spacing.sm,
   },
   featureContainer: {
     width: '100%',
-    gap: spacing.lg + spacing.xs,
+    gap: spacing.lg,
   },
   feature: {
     flexDirection: 'row',
@@ -274,21 +259,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   featureText: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.text,
     flex: 1,
-    lineHeight: 24,
   },
   bottomContainer: {
     position: 'absolute',
@@ -297,43 +274,31 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl + spacing.md,
-    backgroundColor: colors.background,
+    paddingBottom: spacing.xxxl,
     alignItems: 'center',
     gap: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
+    borderTopWidth: 1,
+    ...shadows.lg,
   },
   button: {
     width: '100%',
-    minHeight: 58,
+    minHeight: 56,
     paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xxl,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.primary,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
+    ...typography.bodyBold,
     fontSize: 17,
-    fontWeight: '600',
-    color: colors.card,
-    letterSpacing: 0.2,
+    color: colors.surface,
+    letterSpacing: 0.3,
   },
   skipButton: {
     paddingVertical: spacing.md,
   },
   skipText: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
   },
 });

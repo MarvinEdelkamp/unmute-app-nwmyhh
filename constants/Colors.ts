@@ -1,36 +1,46 @@
 
 // Unmute Premium Design System - Color Tokens
-// ALL LIGHT COLORS - NO BLACK DESIGN
+// Trust-first, calm, privacy-by-default, warm minimalism
 
-// Primary brand colors
+// Primary brand colors - Unmute teal
 export const unmuteColors = {
-  // Main accent (Unmute teal)
-  primary: '#4A9B8E',
-  primaryDark: '#244354',
+  // Primary palette
+  primary: '#5A9B8F',
+  primaryDark: '#3F7269',
+  primaryLight: '#A8C9C1',
   
-  // Secondary accent (for testing/special features)
-  accent: '#F59E0B',
+  // Backgrounds - warm, soft
+  background: '#FDFCFB',
+  surface: '#F9F6F3',
+  surface2: '#F5F1ED',
   
-  // Backgrounds - all light
-  bgDefault: '#F6F7FA',
-  surface: '#FFFFFF',
+  // Borders - subtle, warm
+  border: '#E8DFD8',
   
-  // Text colors - using dark grays instead of black
-  textPrimary: '#374151', // Warm dark gray
-  textSecondary: '#6B7280', // Medium gray
+  // Text hierarchy - readable, warm
+  textPrimary: '#2D2A27',
+  textSecondary: '#5A5248',
+  textTertiary: '#6B6259',
+  textPlaceholder: '#CEC7BE',
   
-  // Borders
-  borderSubtle: '#E5E7EB',
+  // Info/highlight
+  infoBg: '#E8F3F1',
   
-  // Status colors
-  error: '#E53935',
+  // Status colors - subtle, not alarming
+  danger: '#B42318',
+  dangerBg: '#FEE4E2',
   success: '#10B981',
+  successBg: '#D1FAE5',
   warning: '#F59E0B',
+  warningBg: '#FEF3C7',
+  
+  // Accent (for testing features)
+  accent: '#F59E0B',
 };
 
 // Legacy exports for backwards compatibility
 const tintColorLight = unmuteColors.primary;
-const tintColorDark = unmuteColors.primary; // Changed from white to primary
+const tintColorDark = unmuteColors.primary;
 
 export const zincColors = {
   50: "#fafafa",
@@ -48,21 +58,21 @@ export const zincColors = {
 
 export const appleBlue = "#007AFF";
 export const appleRed = "#FF3B30";
-export const borderColor = "#A1A1AA80";
+export const borderColor = "#E8DFD8";
 export const appleGreen = "#34C759";
 
 export const Colors = {
   light: {
     text: unmuteColors.textPrimary,
-    background: unmuteColors.bgDefault,
+    background: unmuteColors.background,
     tint: tintColorLight,
     icon: unmuteColors.textSecondary,
     tabIconDefault: unmuteColors.textSecondary,
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: unmuteColors.textPrimary, // Using same light colors
-    background: unmuteColors.bgDefault,
+    text: unmuteColors.textPrimary,
+    background: unmuteColors.background,
     tint: tintColorDark,
     icon: unmuteColors.textSecondary,
     tabIconDefault: unmuteColors.textSecondary,

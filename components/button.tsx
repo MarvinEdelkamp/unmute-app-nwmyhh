@@ -6,12 +6,12 @@ import {
   StyleSheet,
   Text,
   TextStyle,
-  useColorScheme,
   ViewStyle,
 } from "react-native";
-import { appleBlue } from "@/constants/Colors";
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, typography, borderRadius, shadows } from "@/styles/commonStyles";
 
-type ButtonVariant = "filled" | "outline" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "tertiary" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps {
@@ -27,7 +27,7 @@ interface ButtonProps {
 
 export const Button: React.FC<ButtonProps> = ({
   onPress,
-  variant = "filled",
+  variant = "primary",
   size = "md",
   disabled = false,
   loading = false,
@@ -35,59 +35,121 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const colorScheme = useColorScheme();
-
   const sizeStyles: Record<
     ButtonSize,
-    { height: number; fontSize: number; padding: number }
+    { minHeight: number; fontSize: number; paddingHorizontal: number }
   > = {
-    sm: { height: 36, fontSize: 14, padding: 12 },
-    md: { height: 44, fontSize: 16, padding: 16 },
-    lg: { height: 55, fontSize: 18, padding: 20 },
+    sm: { minHeight: 44, fontSize: 15, paddingHorizontal: spacing.lg },
+    md: { minHeight: 56, fontSize: 16, paddingHorizontal: spacing.xxl },
+    lg: { minHeight: 64, fontSize: 18, paddingHorizontal: spacing.xxxl },
   };
 
-  const getVariantStyle = () => {
+  const getVariantStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      borderRadius: 12,
+      borderRadius: borderRadius.xl,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
+      minHeight: sizeStyles[size].minHeight,
+      paddingHorizontal: sizeStyles[size].paddingHorizontal,
     };
 
     switch (variant) {
-      case "filled":
+      case "primary":
         return {
           ...baseStyle,
-          backgroundColor: '#4A9B8E', // Unmute teal
+          ...shadows.md,
         };
-      case "outline":
+      case "secondary":
+        return {
+          ...baseStyle,
+          backgroundColor: colors.surface,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+        };
+      case "tertiary":
         return {
           ...baseStyle,
           backgroundColor: "transparent",
-          borderWidth: 1,
-          borderColor: '#E5E7EB', // Light gray border
         };
-      case "ghost":
+      case "danger":
         return {
           ...baseStyle,
-          backgroundColor: "transparent",
+          backgroundColor: colors.danger,
+          ...shadows.md,
         };
     }
   };
 
   const getTextColor = () => {
     if (disabled) {
-      return '#9CA3AF'; // Light gray for disabled
+      return colors.textPlaceholder;
     }
 
     switch (variant) {
-      case "filled":
-        return '#FFFFFF'; // White text on teal background
-      case "outline":
-      case "ghost":
-        return appleBlue;
+      case "primary":
+        return colors.surface;
+      case "secondary":
+      case "tertiary":
+        return colors.text;
+      case "danger":
+        return colors.surface;
     }
   };
+
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator color={getTextColor()} />;
+    }
+
+    return (
+      <Text
+        style={StyleSheet.flatten([
+          {
+            fontSize: sizeStyles[size].fontSize,
+            fontWeight: "600",
+            color: getTextColor(),
+            textAlign: "center",
+            letterSpacing: 0.2,
+          },
+          textStyle,
+        ])}
+      >
+        {children}
+      </Text>
+    );
+  };
+
+  if (variant === "primary" && !disabled) {
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={disabled || loading}
+        style={[
+          getVariantStyle(),
+          { opacity: disabled ? 0.4 : 1 },
+          style,
+        ]}
+      >
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.flatten([
+            {
+              width: '100%',
+              height: '100%',
+              borderRadius: borderRadius.xl,
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ])}
+        >
+          {renderContent()}
+        </LinearGradient>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -95,32 +157,12 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
       style={[
         getVariantStyle(),
-        {
-          height: sizeStyles[size].height,
-          paddingHorizontal: sizeStyles[size].padding,
-          opacity: disabled ? 0.5 : 1,
-        },
+        { opacity: disabled ? 0.4 : 1 },
+        variant === "primary" && { backgroundColor: colors.primary },
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator color={getTextColor()} />
-      ) : (
-        <Text
-          style={StyleSheet.flatten([
-            {
-              fontSize: sizeStyles[size].fontSize,
-              color: getTextColor(),
-              textAlign: "center",
-              marginBottom: 0,
-              fontWeight: "700",
-            },
-            textStyle,
-          ])}
-        >
-          {children}
-        </Text>
-      )}
+      {renderContent()}
     </Pressable>
   );
 };

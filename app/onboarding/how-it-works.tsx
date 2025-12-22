@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius, layout } from '@/styles/commonStyles';
+import { colors, spacing, typography, borderRadius, layout, shadows } from '@/styles/commonStyles';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { IconSymbol } from '@/components/IconSymbol';
 import { PaginationDots } from '@/components/PaginationDots';
@@ -36,8 +36,8 @@ export default function HowItWorksScreen() {
         <IconSymbol 
           ios_icon_name="chevron.left" 
           android_material_icon_name="arrow_back" 
-          size={24} 
-          color={colors.text} 
+          size={20} 
+          color={colors.surface} 
         />
       </TouchableOpacity>
 
@@ -62,22 +62,22 @@ export default function HowItWorksScreen() {
           <View style={styles.stepsContainer}>
             <View style={styles.step}>
               <View style={styles.stepLeft}>
-                <View style={styles.stepNumber}>
+                <View style={[styles.stepNumber, shadows.md]}>
                   <Text style={styles.stepNumberText}>1</Text>
                 </View>
                 <View style={styles.stepLine} />
               </View>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Toggle &quot;Open&quot;</Text>
+                <Text style={styles.stepTitle}>Toggle "Open"</Text>
                 <Text style={styles.stepDescription}>
-                  When you&apos;re ready to connect, tap Open. You&apos;re only visible while it&apos;s on.
+                  When you're ready to connect, tap Open. You're only visible while it's on.
                 </Text>
               </View>
             </View>
 
             <View style={styles.step}>
               <View style={styles.stepLeft}>
-                <View style={styles.stepNumber}>
+                <View style={[styles.stepNumber, shadows.md]}>
                   <Text style={styles.stepNumberText}>2</Text>
                 </View>
                 <View style={styles.stepLine} />
@@ -92,7 +92,7 @@ export default function HowItWorksScreen() {
 
             <View style={styles.step}>
               <View style={styles.stepLeft}>
-                <View style={styles.stepNumber}>
+                <View style={[styles.stepNumber, shadows.md]}>
                   <Text style={styles.stepNumberText}>3</Text>
                 </View>
               </View>
@@ -105,8 +105,8 @@ export default function HowItWorksScreen() {
             </View>
           </View>
 
-          <View style={styles.infoBox}>
-            <View style={styles.infoIconContainer}>
+          <View style={[styles.infoBox, { backgroundColor: colors.infoBg, borderColor: colors.primaryLight }]}>
+            <View style={[styles.infoIconContainer, { backgroundColor: colors.surface }]}>
               <IconSymbol 
                 ios_icon_name="lock.fill" 
                 android_material_icon_name="lock" 
@@ -121,15 +121,15 @@ export default function HowItWorksScreen() {
         </ScrollView>
       </Animated.View>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }, shadows.md]}
           onPress={() => router.push('/onboarding/safety')}
         >
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
         
-        <PaginationDots total={3} current={1} />
+        <PaginationDots total={3} current={0} />
       </View>
     </View>
   );
@@ -151,11 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadows.md,
   },
   animatedContent: {
     flex: 1,
@@ -166,27 +162,24 @@ const styles = StyleSheet.create({
     paddingBottom: 180,
   },
   headerSection: {
-    marginBottom: spacing.xxxl + spacing.xl,
+    marginBottom: spacing.huge,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.md,
-    letterSpacing: -0.5,
+    ...typography.h1,
+    color: colors.primaryDark,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 17,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
   },
   stepsContainer: {
-    marginBottom: spacing.xxxl + spacing.lg,
+    marginBottom: spacing.huge,
   },
   step: {
     flexDirection: 'row',
-    gap: spacing.lg + spacing.xs,
-    marginBottom: spacing.xxxl + spacing.md,
+    gap: spacing.xl,
+    marginBottom: spacing.huge,
   },
   stepLeft: {
     alignItems: 'center',
@@ -199,66 +192,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   stepNumberText: {
     fontSize: 24,
-    fontWeight: '700',
-    color: colors.card,
+    fontWeight: '600',
+    color: colors.surface,
   },
   stepLine: {
-    width: 3,
+    width: 2,
     flex: 1,
     backgroundColor: colors.border,
     marginTop: spacing.lg,
-    borderRadius: 2,
+    borderRadius: 1,
   },
   stepContent: {
     flex: 1,
     paddingTop: spacing.xs,
   },
   stepTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...typography.h2,
     color: colors.text,
-    marginBottom: spacing.md + spacing.xs,
-    letterSpacing: -0.3,
+    marginBottom: spacing.md,
   },
   stepDescription: {
-    fontSize: 16,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.textSecondary,
-    lineHeight: 24,
   },
   infoBox: {
     flexDirection: 'row',
     gap: spacing.lg,
-    backgroundColor: colors.secondary,
-    padding: spacing.lg + spacing.md,
-    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: colors.primaryLight,
   },
   infoIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.card,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
   infoText: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '400',
+    ...typography.body,
     color: colors.text,
-    lineHeight: 22,
   },
   bottomContainer: {
     position: 'absolute',
@@ -267,34 +246,24 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.xxxl + spacing.md,
-    backgroundColor: colors.background,
+    paddingBottom: spacing.xxxl,
     alignItems: 'center',
     gap: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
+    borderTopWidth: 1,
+    ...shadows.lg,
   },
   button: {
     width: '100%',
     minHeight: 56,
-    paddingVertical: spacing.lg + spacing.xs,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
+    ...typography.bodyBold,
     fontSize: 17,
-    fontWeight: '600',
-    color: colors.card,
-    letterSpacing: 0.2,
+    color: colors.surface,
+    letterSpacing: 0.3,
   },
 });
